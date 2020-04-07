@@ -176,9 +176,8 @@ def parse_questions(txt):
     return questions
 
 
-def parse_correct_answers(txt, letter2num=False):
+def parse_correct_answers(txt, letter2num=True):
     answers = []
-    letter2num = "abcdefghijklmnopqrstuvwxyz"
 
     # Split block of questions
     blocks = rgx_block_correct_answer.findall(txt)
@@ -233,7 +232,7 @@ def load_quiz(filename):
     return quiz
 
 
-def quiz2txt(quiz, show_correct=True):
+def quiz2txt(quiz, show_correct):
     txt = ""
 
     # Sort questions by key
@@ -246,7 +245,7 @@ def quiz2txt(quiz, show_correct=True):
 
         # Format answers
         for j, ans in enumerate(question['answers']):
-            isCorrect = "*" if j == question.get("correct_answer") else ""
+            isCorrect = "*" if show_correct and j == question.get("correct_answer") else ""
             txt += "{}{}) {}\n".format(isCorrect, string.ascii_lowercase[j].lower(), ans)
         txt += "\n"
-    return txt
+    return txt.strip()
