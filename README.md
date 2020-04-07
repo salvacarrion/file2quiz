@@ -56,13 +56,14 @@ optional arguments:
 ### Parse
 
 **Command:**
-´´´
+
+```
 quiz2test --action parse --input examples/raw --token "==="
-´´´
+```
 
 **Input file (`examples/raw/demo.txt`):**
 
-´´´
+```
 This is a demo in order to
 show how the program works
 
@@ -95,14 +96,18 @@ Solutions:
 1. A
 2 - b
 3: d
-´´´
+```
 
 
-**View result:**
+### Read
 
-````
+To read the output json, type:
+
+```
 quiz2test --action read 
-´´´
+```
+
+Output:
 
 ```
 ===========================================
