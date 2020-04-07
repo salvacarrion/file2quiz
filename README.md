@@ -33,8 +33,9 @@ By the default, quiz2test searches in the folder `raw/` (create it) for files to
 Type `quiz2test` in the terminal to see the available options:
 
 ```
-usage: main.py [-h] [-a {parse,read,convert2anki}] [-i INPUT] [-o OUTPUT]
-               [-t TOKEN] [-s] [-e EXCLUDE_WORDS]
+usage: quiz2test [-h] [-a {parse,read,convert2anki}] [-i INPUT] [-o OUTPUT]
+                 [-t TOKEN] [-s] [-e EXCLUDE_WORDS] [--single_line]
+                 [--num_answers NUM_ANSWERS]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -49,6 +50,9 @@ optional arguments:
   -s, --show_correct    Show correct answer
   -e EXCLUDE_WORDS, --exclude_words EXCLUDE_WORDS
                         File with excluded words
+  --single_line         Use single line to split elements
+  --num_answers NUM_ANSWERS
+                        Number of answers per question
 ```
 
 ## Example
