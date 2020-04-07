@@ -59,13 +59,13 @@ optional arguments:
 
 ### Parse
 
-**Command:**
+To parse a file (or all the files in a directory), type:
 
 ```
 quiz2test --action parse --input examples/raw --token "==="
 ```
 
-**Input file (`examples/raw/demo.txt`):**
+Input file (`examples/raw/demo.txt`):
 
 ```
 This is a demo in order to
@@ -105,7 +105,7 @@ Solutions:
 
 ### Read
 
-To read the output json, type:
+To read a json file (or all the json files in a directory), type:
 
 ```
 quiz2test --action read --input examples/parsed
