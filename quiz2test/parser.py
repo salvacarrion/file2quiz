@@ -115,7 +115,7 @@ def read_file(filename, banned_words, answer_token):
 
 def read_pdf(filename):
     text = ""
-    with open(filename, 'rb') as f:
+    with open(filename, 'rb', encoding="utf8") as f:
         pdf = PyPDF2.PdfFileReader(f)
 
         for p in pdf.pages:
@@ -125,7 +125,7 @@ def read_pdf(filename):
 
 def read_txt(filename):
     text = ""
-    with open(filename, 'r') as f:
+    with open(filename, 'r', encoding="utf8") as f:
         text = f.read()
     return text
 
@@ -232,12 +232,12 @@ def build_json(questions, correct_answers=None):
 
 
 def save_quiz(quiz, filename):
-    with open(filename, 'w') as f:
+    with open(filename, 'w', encoding="utf8") as f:
         json.dump(quiz, f)
 
 
 def load_quiz(filename):
-    with open(filename, 'r') as f:
+    with open(filename, 'r', encoding="utf8") as f:
         quiz = json.load(f)
     return quiz
 
@@ -263,7 +263,7 @@ def quiz2txt(quiz, show_correct):
 
 def get_banned_words(filename):
     if filename and os.path.exists(filename):
-        with open(filename, 'r') as f:
+        with open(filename, 'r', encoding="utf8") as f:
             lines = f.read()
             words = [l.strip() for l in lines.split('\n') if l.strip()]
             return list(set(words))
