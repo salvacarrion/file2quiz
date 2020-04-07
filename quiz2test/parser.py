@@ -36,8 +36,8 @@ def parse_exams(input_dir, output_dir, answer_token=None, banned_file=None, sing
 
         # Check number of questions and answers
         if correct_answers and len(questions) != len(correct_answers):
-            raise IOError("The number of questions ({}) and correct answers ({}) does not match"
-                          .format(len(questions), len(correct_answers)))
+            print("[WARNING] The number of questions ({}) and correct answers ({}) does not match"
+                  .format(len(questions), len(correct_answers)))
 
         # Build quiz
         quiz = build_quiz(questions, correct_answers)
@@ -132,7 +132,15 @@ def parse_questions(txt, single_line, num_answers=None):
         if single_line:
             lines = q_block.split("\n")
             id_question, question = (remove_whitespace(v) for v in rgx_question_single.match(lines[0]).groups())
-            answers = [remove_whitespace(ans) for ans in lines[1:]]
+
+            answers = []
+            for q_answer in lines[1:]:
+                m = rgx_answer_single.match(q_answer)
+                if m and len(m.groups()) == 2:
+                    id_ans, ans = m.groups()
+                else:
+                    ans = q_answer
+                answers.append(remove_whitespace(ans))
         else:
             q_block += "\n\nz) blablabal"  # trick for regex
             id_question, question = (remove_whitespace(v) for v in rgx_question.findall(q_block)[0])
@@ -142,12 +150,14 @@ def parse_questions(txt, single_line, num_answers=None):
         answers = [ans for ans in answers if ans]  # Add non-empty answers
 
         # Check number of answers
+        q_str_error = q_block.replace('\n', ' ').strip()
         if num_answers and len(answers) != num_answers:
-            raise IOError("The number of answers expected ({}) does not match the number of answers found ({}). "
-                          "Question: #{}".format(num_answers, len(answers), id_question))
+            print("[WARNING] Skipping question. {} answers found / {} expected. "
+                  "[Q: \"{}\"]".format(len(answers), num_answers, q_str_error))
+            continue
         else:
             if len(answers) < 2:
-                print("[WARNING] Skipping question #{}. Less than two answers.".format(id_question))
+                print("[WARNING] Skipping question. Less than two answers. [Q: \"{}\"]".format(q_str_error))
                 continue
 
         # Add questions

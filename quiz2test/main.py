@@ -12,7 +12,7 @@ def main():
     parser.add_argument('-t', '--token', help="Token used to split questions and answers", default=None)
     parser.add_argument('-s', '--show_correct', help="Show correct answer", default=True, action='store_true')
     parser.add_argument('-e', '--exclude_words', help="File with excluded words", default=None)
-    parser.add_argument('--single_line', help="Use single line to split elements", default=True, action='store_true')
+    parser.add_argument('--single_line', help="Use single line to split elements", default=False, action='store_true')
     parser.add_argument('--num_answers', help="Number of answers per question", default=None, type=int)
 
     args = parser.parse_args()
