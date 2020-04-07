@@ -34,6 +34,7 @@ def read_pdf(filename):
             text += p.extractText() + "\n\n\n"
     return text
 
+
 def check_input(path, extensions=None):
     # Check input path
     if not os.path.exists(path):

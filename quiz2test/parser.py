@@ -85,7 +85,6 @@ def clean_text(text, banned_words=None, only_latin=False):
 
     # Remove unwanted characters
     text = text \
-        .replace("\t", " ") \
         .replace("\n.", ".") \
         .replace(" .", ".") \
         .replace(" º", "º") \

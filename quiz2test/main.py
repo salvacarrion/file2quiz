@@ -15,14 +15,18 @@ def main():
 
     args = parser.parse_args()
     if args.action == "parse":
-        input_dir = args.input if args.input else os.path.abspath(os.path.join(os.getcwd(), "raw"))
-        output_dir = args.output if args.output else os.path.abspath(os.path.join(os.path.dirname(input_dir), "parsed"))
-        banned_words = args.output if args.output else os.path.abspath(os.path.join(os.path.dirname(input_dir), "banned.txt"))
+        input_dir = os.path.abspath(args.input) if args.input else os.path.abspath(os.path.join(os.getcwd(), "raw"))
+        output_dir = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.path.dirname(input_dir), "parsed"))
+        banned_words = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.path.dirname(input_dir), "banned.txt"))
+
+        # Parse quizzes
         quiz2test.parse_exams(input_dir, output_dir, args.token, banned_words)
         print("Done!")
 
     elif args.action == "read":
-        input_dir = args.input if args.input else os.path.abspath(os.path.join(os.getcwd(), "parsed"))
+        input_dir = os.path.abspath(args.input) if args.input else os.path.abspath(os.path.join(os.getcwd(), "parsed"))
+
+        # Read quizzes
         quiz_txts = quiz2test.json2text(input_dir, args.show_correct)
 
         # Print quizes
@@ -35,8 +39,10 @@ def main():
             print("\n\n") if i < len(quiz_txts) else None
 
     elif args.action == "convert2anki":
-        input_dir = args.input if args.input else os.path.abspath(os.path.join(os.getcwd(), "parsed"))
-        output_dir = args.output if args.output else os.path.abspath(os.path.join(os.path.dirname(input_dir), "anki"))
+        input_dir = os.path.abspath(args.input) if args.input else os.path.abspath(os.path.join(os.getcwd(), "parsed"))
+        output_dir = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.path.dirname(input_dir), "anki"))
+
+        # Convert quizzes
         quiz2test.convert2anki(input_dir, output_dir)
 
     else:

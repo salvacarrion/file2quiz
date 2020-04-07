@@ -1,0 +1,2 @@
+WORD1TODELETE
+pattern\d+

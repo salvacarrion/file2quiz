@@ -57,14 +57,15 @@ optional arguments:
 
 **Command:**
 ´´´
-quiz2test --action parse --input examples/raw --token "======"
+quiz2test --action parse --input examples/raw --token "==="
 ´´´
 
 **Input file (`examples/raw/demo.txt`):**
+
 ´´´
-This is a demo in order to 
+This is a demo in order to
 show how the program works
-  
+
 1. Can quiz2test manage multiple choice questions with weird formats?
 a. Yes! That's its purpose!
 B) no, it can't
@@ -81,17 +82,19 @@ sentence is required
 c	No, that's imposible
 d) Yes, but only for text files
 
+3. Can we exclude certain words or patterns?
+a) Still in progress
+b) You wish...
+c) No, but that would be awesome!
+d) Yes, like: "WORD1TODELETE" or "pattern1", "pattern123"
 
-3) Can we use a list of banned words?
-A) No
-B) I've doubted it
-C) Yes, just creat a "banned.txt" file with one word or sentence per line
-d) Maybe in the future...
+
 
 ===
 Solutions:
 1. A
 2 - b
+3: d
 ´´´
 
 
@@ -102,4 +105,25 @@ quiz2test --action read
 ´´´
 
 ```
+===========================================
+Quiz #1: demo
+===========================================
+
+1) Can quiz2test manage multiple choice questions with weird formats?
+*a) Yes! Thats its purpose!
+b) no, it cant
+c) it depends...
+d) who knows????
+
+2) Can quiz2test deal with broken lines ?
+a) Maybe...
+*b) Yes, but format the "letter [symbol] sentence is required
+c) No, thats imposible
+d) Yes, but only for text files
+
+3) Can we exclude certain words or patterns?
+a) Still in progress
+b) You wish...
+c) No, but that would be awesome!
+*d) Yes, like: "" or "", ""
 ```
