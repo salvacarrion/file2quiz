@@ -16,7 +16,7 @@ rgx_answer = re.compile(r'^([a-zA-Z]{1})[\s]*[\.\-\)\t]+([\S\s]*?)(?=^.*[\s]*[\.
 rgx_block_correct_answer = re.compile(r'(^\d+\D*)', re.MULTILINE)
 
 
-def parse_exams(input_dir, output_dir, answer_token=None):
+def parse_exams(input_dir, output_dir, answer_token=None, banned_file=None):
     # Check input path
     if not os.path.exists(input_dir):
         raise IOError("Input path does not exists: {}".format(input_dir))
@@ -29,6 +29,9 @@ def parse_exams(input_dir, output_dir, answer_token=None):
         print("Output path does not exists. Creating folder...".format(output_dir))
     os.mkdir(output_dir)
 
+    # Check excluded words
+    banned_words = get_banned_words(banned_file)
+
     # Read input files
     files = get_files(input_dir)
 
@@ -39,7 +42,7 @@ def parse_exams(input_dir, output_dir, answer_token=None):
     # Parse exams
     for i, filename in enumerate(files, 1):
         # Read file
-        txt_questions, txt_answers = read_file(filename, answer_token)
+        txt_questions, txt_answers = read_file(filename, banned_words, answer_token)
 
         # Parse questions and correct answers
         questions = parse_questions(txt_questions)
@@ -78,7 +81,7 @@ def get_files(path, extensions=None):
     return files
 
 
-def read_file(filename, answer_token):
+def read_file(filename, banned_words, answer_token):
     txt_questions, txt_answers = "", ""
 
     # Get path values
@@ -93,7 +96,7 @@ def read_file(filename, answer_token):
         txt = read_pdf(filename)
     else:
         raise IOError("Invalid file extension")
-    txt = clean_text(txt)
+    txt = clean_text(txt, banned_words)
 
     # Check if the text has to be splitted
     if not answer_token:
@@ -127,7 +130,10 @@ def read_txt(filename):
     return text
 
 
-def clean_text(text):
+def clean_text(text, banned_words=None):
+    if banned_words is None:
+        banned_words = []
+
     # Remove unwanted characters
     text = text\
         .replace("\t", " ")\
@@ -140,6 +146,10 @@ def clean_text(text):
         .replace("´´", '\"')\
         .replace("\ufeff", '')
     text = re.sub(r'[ ]{2,}', ' ', text)  # two whitespaces
+
+    # Remove banned words
+    banned_regex = "|".join(banned_words)
+    text = re.sub(r"{}".format(banned_regex), '', text)
 
     # Only latin characters
     #text = regex.sub('\p{Latin}\p{posix_punct}]+', '', text)
@@ -249,3 +259,14 @@ def quiz2txt(quiz, show_correct):
             txt += "{}{}) {}\n".format(isCorrect, string.ascii_lowercase[j].lower(), ans)
         txt += "\n"
     return txt.strip()
+
+
+def get_banned_words(filename):
+    if filename and os.path.exists(filename):
+        with open(filename, 'r') as f:
+            lines = f.read()
+            words = [l.strip() for l in lines.split('\n') if l.strip()]
+            return list(set(words))
+    else:
+        print("[WARNING] Banned words file not found")
+    return []
