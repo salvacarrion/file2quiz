@@ -1,43 +1,27 @@
-import os
 import re
-import shutil
 import regex
-import json
 import string
 
-import PyPDF2
+from quiz2test.utils import *
 
 digits = re.compile(r'(\d+)')
 letters = re.compile(r'([a-zA-Z]+)')
 
 rgx_block_question = re.compile(r'(^\d+[\s]*[\.\-\)\t]+[\S\s]*?)(?=^\d+[\s]*[\.\-\)\t]+[\S\s]*?)', re.MULTILINE)  # question to question
 rgx_question = re.compile(r'^(\d+)[\s]*[\.\-\)\s]+([\S\s]*?)(?=^[a-zA-Z]{1}[\s]*[\.\-\)\t]+[\S\s]*?$)', re.MULTILINE)  # question to answer
-rgx_answer = re.compile(r'^([a-zA-Z]{1})[\s]*[\.\-\)\t]+([\S\s]*?)(?=^.*[\s]*[\.\-\)\t]+[\S\s]*?)', re.MULTILINE) # answer to answer
+rgx_answer = re.compile(r'^([a-zA-Z]{1})[\s]*[\.\-\)\t]+([\S\s]*?)(?=^.*[\s]*[\.\-\)\t]+[\S\s]*?)', re.MULTILINE)  # answer to answer
 rgx_block_correct_answer = re.compile(r'(^\d+\D*)', re.MULTILINE)
 
 
 def parse_exams(input_dir, output_dir, answer_token=None, banned_file=None):
-    # Check input path
-    if not os.path.exists(input_dir):
-        raise IOError("Input path does not exists: {}".format(input_dir))
+    # Get files
+    files = check_input(input_dir)
 
-    # Check output path
-    if os.path.exists(output_dir):
-        print("Deleting output folder contents...")
-        shutil.rmtree(output_dir)
-    else:
-        print("Output path does not exists. Creating folder...".format(output_dir))
-    os.mkdir(output_dir)
+    # Check output
+    check_output(output_dir)
 
-    # Check excluded words
+    # Get banned words
     banned_words = get_banned_words(banned_file)
-
-    # Read input files
-    files = get_files(input_dir)
-
-    # Check files
-    if not files:
-        raise IOError("Not files where found at: {}".format(input_dir))
 
     # Parse exams
     for i, filename in enumerate(files, 1):
@@ -50,35 +34,17 @@ def parse_exams(input_dir, output_dir, answer_token=None, banned_file=None):
 
         # Check number of questions and answers
         if correct_answers and len(questions) != len(correct_answers):
-            raise IOError("The number of questions ({}) and correct answers ({}) does not match".format(len(questions), len(correct_answers)))
+            raise IOError("The number of questions ({}) and correct answers ({}) does not match"
+                          .format(len(questions), len(correct_answers)))
 
         # Build quiz
-        quiz = build_json(questions, correct_answers)
+        quiz = build_quiz(questions, correct_answers)
 
         # Save file
         fname, extension = os.path.splitext(os.path.basename(filename))
         savepath = os.path.join(output_dir, "{}.json".format(fname))
         save_quiz(quiz, savepath)
         print("{}. Quiz '{}' saved!".format(i, fname))
-
-
-def get_files(path, extensions=None):
-    files = []
-
-    if extensions is None:
-        extensions = {'txt', 'pdf'}
-
-    for filename in os.listdir(path):
-        # Get extension
-        fname, ext = os.path.splitext(filename)
-        ext = ext.replace('.', '')  # remove dot
-
-        # Check if the extension is valid
-        if ext in extensions:
-            files.append(os.path.join(path, filename))
-        else:
-            print("Ignoring file: '{}'. Invalid extension".format(filename))
-    return files
 
 
 def read_file(filename, banned_words, answer_token):
@@ -109,50 +75,34 @@ def read_file(filename, banned_words, answer_token):
             txt_questions, txt_answers = sections
         else:
             txt_questions = txt
-            #raise IOError("No answer section found. Check delimiter")
+            print("[WARNING] No answer section found. Check delimiter")
     return txt_questions.strip(), txt_answers.strip()
 
 
-def read_pdf(filename):
-    text = ""
-    with open(filename, 'rb', encoding="utf8") as f:
-        pdf = PyPDF2.PdfFileReader(f)
-
-        for p in pdf.pages:
-            text += p.extractText() + "\n\n\n"
-    return text
-
-
-def read_txt(filename):
-    text = ""
-    with open(filename, 'r', encoding="utf8") as f:
-        text = f.read()
-    return text
-
-
-def clean_text(text, banned_words=None):
+def clean_text(text, banned_words=None, only_latin=False):
     if banned_words is None:
         banned_words = []
 
     # Remove unwanted characters
-    text = text\
-        .replace("\t", " ")\
-        .replace("\n.", ".")\
-        .replace(" .", ".")\
-        .replace(" º", "º")\
-        .replace('“', '').replace('”', '').replace("'", '')\
-        .replace("€)", 'c)')\
-        .replace("``", '\"')\
-        .replace("´´", '\"')\
+    text = text \
+        .replace("\t", " ") \
+        .replace("\n.", ".") \
+        .replace(" .", ".") \
+        .replace(" º", "º") \
+        .replace('“', '').replace('”', '').replace("'", '') \
+        .replace("€)", 'c)') \
+        .replace("``", '\"') \
+        .replace("´´", '\"') \
         .replace("\ufeff", '')
-    text = re.sub(r'[ ]{2,}', ' ', text)  # two whitespaces
+    text = re.sub(r"[ ]{2,}", ' ', text)  # two whitespaces
 
     # Remove banned words
     banned_regex = "|".join(banned_words)
     text = re.sub(r"{}".format(banned_regex), '', text)
 
     # Only latin characters
-    #text = regex.sub('\p{Latin}\p{posix_punct}]+', '', text)
+    if only_latin:
+        text = regex.sub(r"\p{Latin}\p{posix_punct}]+", '', text)
 
     lines = []
     for l in text.split('\n'):
@@ -177,7 +127,7 @@ def parse_questions(txt):
     txt += '\n\n0. blabla'  # trick for regex
     question_blocks = rgx_block_question.findall(txt)
     for i, q_block in enumerate(question_blocks):
-        q_block += "\n\nz) blablabal"   # trick for regex
+        q_block += "\n\nz) blablabal"  # trick for regex
         id_question, question = (remove_whitespace(v) for v in rgx_question.findall(q_block)[0])
         answers = [remove_whitespace(ans[1]) for ans in rgx_answer.findall(q_block)]
 
@@ -204,69 +154,3 @@ def parse_correct_answers(txt, letter2num=True):
         # Add questions
         answers.append([id_question, id_answer])
     return answers
-
-
-def build_json(questions, correct_answers=None):
-    quiz = {}
-
-    # Add questions
-    for q in questions:
-        id_question, question, answers = q
-        quiz[id_question] = {
-            'id': id_question,
-            'question': question,
-            'answers': answers,
-            'correct_answer': None
-        }
-
-    # Add answers
-    if correct_answers:
-        for ans in correct_answers:
-            id_question, answer = ans
-            if id_question in quiz:
-                quiz[id_question]['correct_answer'] = answer
-            else:
-                print("[WARNING] Missing question for answer '{}'".format(id_question))
-
-    return quiz
-
-
-def save_quiz(quiz, filename):
-    with open(filename, 'w', encoding="utf8") as f:
-        json.dump(quiz, f)
-
-
-def load_quiz(filename):
-    with open(filename, 'r', encoding="utf8") as f:
-        quiz = json.load(f)
-    return quiz
-
-
-def quiz2txt(quiz, show_correct):
-    txt = ""
-
-    # Sort questions by key
-    keys = sorted(quiz.keys(), key=lambda x: int(x))
-    for i, id_question in enumerate(keys):
-        question = quiz[id_question]
-
-        # Format question
-        txt += "{}) {}\n".format(id_question, question['question'])
-
-        # Format answers
-        for j, ans in enumerate(question['answers']):
-            isCorrect = "*" if show_correct and j == question.get("correct_answer") else ""
-            txt += "{}{}) {}\n".format(isCorrect, string.ascii_lowercase[j].lower(), ans)
-        txt += "\n"
-    return txt.strip()
-
-
-def get_banned_words(filename):
-    if filename and os.path.exists(filename):
-        with open(filename, 'r', encoding="utf8") as f:
-            lines = f.read()
-            words = [l.strip() for l in lines.split('\n') if l.strip()]
-            return list(set(words))
-    else:
-        print("[WARNING] Banned words file not found")
-    return []

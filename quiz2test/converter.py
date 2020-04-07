@@ -1,28 +1,16 @@
 import os
 import shutil
+import string
 
-from quiz2test.parser import get_files, load_quiz
+from quiz2test.utils import *
 
 
 def convert2anki(input_dir, output_dir):
-    # Check input path
-    if not os.path.exists(input_dir):
-        raise IOError("Input path does not exists: {}".format(input_dir))
+    # Get files
+    files = check_input(input_dir, extensions={"json"})
 
-    # Check output path
-    if os.path.exists(output_dir):
-        print("Deleting output folder contents...")
-        shutil.rmtree(output_dir)
-    else:
-        print("Output path does not exists. Creating folder...".format(output_dir))
-    os.mkdir(output_dir)
-
-    # Read input files
-    files = get_files(input_dir, extensions={'json'})
-
-    # Check files
-    if not files:
-        raise IOError("Not files where found at: {}".format(input_dir))
+    # Check output
+    check_output(output_dir)
 
     # Parse files
     for i, filename in enumerate(files, 1):
@@ -57,6 +45,34 @@ def quiz2anki(quiz):
     return text.strip()
 
 
-def save_text(text, filename):
-    with open(filename, 'w', encoding="utf8") as f:
-        f.write(text)
+def quiz2txt(quiz, show_correct):
+    txt = ""
+
+    # Sort questions by key
+    keys = sorted(quiz.keys(), key=lambda x: int(x))
+    for i, id_question in enumerate(keys):
+        question = quiz[id_question]
+
+        # Format question
+        txt += "{}) {}\n".format(id_question, question['question'])
+
+        # Format answers
+        for j, ans in enumerate(question['answers']):
+            isCorrect = "*" if show_correct and j == question.get("correct_answer") else ""
+            txt += "{}{}) {}\n".format(isCorrect, string.ascii_lowercase[j].lower(), ans)
+        txt += "\n"
+    return txt.strip()
+
+
+def json2text(path, show_correct):
+    texts = []
+    files = check_input(path, extensions="json")
+    for filename in files:
+        fname, extension = os.path.splitext(os.path.basename(filename))
+
+        # Load quiz and text
+        quiz = load_quiz(filename)
+        quiz_txt = quiz2txt(quiz, show_correct)
+
+        texts.append((fname, quiz_txt))
+    return texts

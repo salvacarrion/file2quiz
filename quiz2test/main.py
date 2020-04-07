@@ -18,17 +18,26 @@ def main():
         input_dir = args.input if args.input else os.path.abspath(os.path.join(os.getcwd(), "raw"))
         output_dir = args.output if args.output else os.path.abspath(os.path.join(os.path.dirname(input_dir), "parsed"))
         banned_words = args.output if args.output else os.path.abspath(os.path.join(os.path.dirname(input_dir), "banned.txt"))
-        quiz2test.parser.parse_exams(input_dir, output_dir, args.token, banned_words)
+        quiz2test.parse_exams(input_dir, output_dir, args.token, banned_words)
         print("Done!")
 
     elif args.action == "read":
-        quiz = quiz2test.parser.load_quiz(args.input)
-        txt = quiz2test.parser.quiz2txt(quiz, args.show_correct)
-        print(txt)
+        input_dir = args.input if args.input else os.path.abspath(os.path.join(os.getcwd(), "parsed"))
+        quiz_txts = quiz2test.json2text(input_dir, args.show_correct)
+
+        # Print quizes
+        for i, (name, quiz_txt) in enumerate(quiz_txts, 1):
+            print("===========================================")
+            print("Quiz #{}: {}".format(i, name))
+            print("===========================================")
+            print("")
+            print(quiz_txt)
+            print("\n\n") if i < len(quiz_txts) else None
+
     elif args.action == "convert2anki":
         input_dir = args.input if args.input else os.path.abspath(os.path.join(os.getcwd(), "parsed"))
         output_dir = args.output if args.output else os.path.abspath(os.path.join(os.path.dirname(input_dir), "anki"))
-        quiz2test.converter.convert2anki(input_dir, output_dir)
+        quiz2test.convert2anki(input_dir, output_dir)
 
     else:
         parser.print_help()
