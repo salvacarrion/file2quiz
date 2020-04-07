@@ -7,20 +7,24 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('-a', '--action', help="shows output", default="parse")
-    parser.add_argument('-i', '--input', help="Folder to search for the raw exams", default=None)
-    parser.add_argument('-o', '--output', help="Folder to save for the parsed exams", default=None)
+    parser.add_argument('-i', '--input', help="File or folder to search for the raw exams", default=None)
+    parser.add_argument('-o', '--output', help="File or folder to save for the parsed exams", default=None)
     parser.add_argument('-t', '--token', help="Token used to split questions and answers", default=None)
+    parser.add_argument('-s', '--show_correct', help="Show correct answer", default=True, action='store_true')
 
     args = parser.parse_args()
 
     if args.action:
-        input_dir = args.input if args.input else os.path.abspath(os.path.join(os.getcwd(), "raw"))
-        output_dir = args.output if args.output else os.path.abspath(os.path.join(os.path.dirname(input_dir), "parsed"))
 
         if args.action == "parse":
+            input_dir = args.input if args.input else os.path.abspath(os.path.join(os.getcwd(), "raw"))
+            output_dir = args.output if args.output else os.path.abspath(os.path.join(os.path.dirname(input_dir), "parsed"))
             quiz2test.parser.parse_exams(input_dir, output_dir, args.token)
-        elif args.action == "quiz":
-            pass
+
+        elif args.action == "read":
+            quiz = quiz2test.parser.load_quiz(args.input)
+            txt = quiz2test.parser.quiz2txt(quiz, args.show_correct)
+            print(txt)
         else:
             raise KeyError("Unknown option")
 
