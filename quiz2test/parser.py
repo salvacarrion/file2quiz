@@ -5,16 +5,14 @@ import regex
 import json
 import string
 
+import PyPDF2
+
 digits = re.compile(r'(\d+)')
 letters = re.compile(r'([a-zA-Z]+)')
 
-# p_question = r"^(\d+[\s]*[\W]{0,2}[\S\s]*?)(?=^[a-zA-Z]*[\s\W]+.*$)"
-# p_answer = r"^([a-zA-Z]*)[\s\W]+(.*)$"
-# rgx_block_question = re.compile(r'^(\d+[\s]*[\W]{0,2}[\S\s]*?)(?=^\d+[\s]*[\W]{0,2})', re.MULTILINE)
-
-rgx_block_question = re.compile(r'(^\d+[\s]*[\W]{0,2}[\S\s]*?)(?=^\d+[\s]*[\W]{0,2}[\S\s]*?)', re.MULTILINE)
-rgx_question = re.compile(r'^(\d+)[\s]*[\W]{0,2}([\S\s]*?)(?=^[a-zA-Z]{1}[\s\W]+.*$)', re.MULTILINE)
-rgx_answer = re.compile(r'^([a-zA-Z]{1})[\s\W]+(.*)$', re.MULTILINE)
+rgx_block_question = re.compile(r'(^\d+[\s]*[\.\-\)\t]+[\S\s]*?)(?=^\d+[\s]*[\.\-\)\t]+[\S\s]*?)', re.MULTILINE)  # question to question
+rgx_question = re.compile(r'^(\d+)[\s]*[\.\-\)\s]+([\S\s]*?)(?=^[a-zA-Z]{1}[\s]*[\.\-\)\t]+[\S\s]*?$)', re.MULTILINE)  # question to answer
+rgx_answer = re.compile(r'^([a-zA-Z]{1})[\s]*[\.\-\)\t]+([\S\s]*?)(?=^.*[\s]*[\.\-\)\t]+[\S\s]*?)', re.MULTILINE) # answer to answer
 rgx_block_correct_answer = re.compile(r'(^\d+\D*)', re.MULTILINE)
 
 
@@ -32,19 +30,16 @@ def parse_exams(input_dir, output_dir, answer_token=None):
     os.mkdir(output_dir)
 
     # Read input files
-    files = read_files(input_dir)
+    files = get_files(input_dir)
 
     # Check files
     if not files:
         raise IOError("Not files where found at: {}".format(input_dir))
 
     # Parse exams
-    for i, f in enumerate(files, 1):
-        basedir = os.path.basename(f)
-        fname, extension = os.path.splitext(basedir)
-
+    for i, filename in enumerate(files, 1):
         # Read file
-        txt_questions, txt_answers = read_file(f, answer_token)
+        txt_questions, txt_answers = read_file(filename, answer_token)
 
         # Parse questions and correct answers
         questions = parse_questions(txt_questions)
@@ -58,37 +53,78 @@ def parse_exams(input_dir, output_dir, answer_token=None):
         quiz = build_json(questions, correct_answers)
 
         # Save file
-        filename = os.path.join(output_dir, "{}.json".format(fname))
-        save_quiz(quiz, filename)
+        fname, extension = os.path.splitext(os.path.basename(filename))
+        savepath = os.path.join(output_dir, "{}.json".format(fname))
+        save_quiz(quiz, savepath)
         print("{}. Quiz '{}' saved!".format(i, fname))
 
 
-def read_files(path, extension="txt"):
+def get_files(path, extensions=None):
     files = []
-    for file in os.listdir(path):
-        if file.endswith(".{}".format(extension)):
-            files.append(os.path.join(path, file))
+
+    if extensions is None:
+        extensions = {'txt', 'pdf'}
+
+    for filename in os.listdir(path):
+        # Get extension
+        fname, ext = os.path.splitext(filename)
+        ext = ext.replace('.', '')  # remove dot
+
+        # Check if the extension is valid
+        if ext in extensions:
+            files.append(os.path.join(path, filename))
+        else:
+            print("Ignoring file: '{}'. Invalid extension".format(filename))
     return files
 
 
 def read_file(filename, answer_token):
-    txt_questions, txt_answers = None, None
+    txt_questions, txt_answers = "", ""
 
-    with open(filename, 'r') as f:
-        txt = clean_text(f.read())
+    # Get path values
+    basedir = os.path.basename(filename)
+    fname, extension = os.path.splitext(basedir)
+    extension = extension.replace('.', '')  # remove dot
 
-        # Check if the text has to be splitted
-        if not answer_token:
-            txt_questions = txt
+    # Select method depending on the extension
+    if extension == "txt":
+        txt = read_txt(filename)
+    elif extension == "pdf":
+        txt = read_pdf(filename)
+    else:
+        raise IOError("Invalid file extension")
+    txt = clean_text(txt)
 
+    # Check if the text has to be splitted
+    if not answer_token:
+        txt_questions = txt
+
+    else:
+        # Split text if contains questions and answers
+        sections = re.split(re.compile(r"^{}$".format(re.escape(answer_token)), re.MULTILINE), txt)
+        if len(sections) == 2:
+            txt_questions, txt_answers = sections
         else:
-            # Split text if contains questions and answers
-            sections = re.split(re.compile(r"^{}$".format(re.escape(answer_token)), re.MULTILINE), txt)
-            if len(sections) == 2:
-                txt_questions, txt_answers = sections
-            else:
-                raise IOError("No answer section found. Check delimiter")
+            txt_questions = txt
+            #raise IOError("No answer section found. Check delimiter")
     return txt_questions.strip(), txt_answers.strip()
+
+
+def read_pdf(filename):
+    text = ""
+    with open(filename, 'rb') as f:
+        pdf = PyPDF2.PdfFileReader(f)
+
+        for p in pdf.pages:
+            text += p.extractText() + "\n\n\n"
+    return text
+
+
+def read_txt(filename):
+    text = ""
+    with open(filename, 'r') as f:
+        text = f.read()
+    return text
 
 
 def clean_text(text):
@@ -106,7 +142,7 @@ def clean_text(text):
     text = re.sub(r'[ ]{2,}', ' ', text)  # two whitespaces
 
     # Only latin characters
-    text = regex.sub('\p{Latin}\p{posix_punct}]+', '', text)
+    #text = regex.sub('\p{Latin}\p{posix_punct}]+', '', text)
 
     lines = []
     for l in text.split('\n'):
@@ -131,6 +167,7 @@ def parse_questions(txt):
     txt += '\n\n0. blabla'  # trick for regex
     question_blocks = rgx_block_question.findall(txt)
     for i, q_block in enumerate(question_blocks):
+        q_block += "\n\nz) blablabal"   # trick for regex
         id_question, question = (remove_whitespace(v) for v in rgx_question.findall(q_block)[0])
         answers = [remove_whitespace(ans[1]) for ans in rgx_answer.findall(q_block)]
 
