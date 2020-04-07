@@ -1,0 +1,24 @@
+This is a demo in order to
+show how the program works
+
+1. Can quiz2test manage multiple choice questions with weird formats?
+a. Yes! That's its purpose!
+B) no, it can't
+c	it depends...
+D- who knows????
+
+
+2. Can quiz2test deal with
+broken lines
+?
+a. Maybe...
+b) Yes, but format the "letter [symbol]
+sentence is required
+c	No, that's imposible
+d) Yes, but only for text files
+
+
+===
+Solutions:
+1. A
+2 - b
