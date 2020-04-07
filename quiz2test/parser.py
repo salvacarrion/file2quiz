@@ -138,13 +138,18 @@ def parse_questions(txt, single_line, num_answers=None):
             id_question, question = (remove_whitespace(v) for v in rgx_question.findall(q_block)[0])
             answers = [remove_whitespace(ans[1]) for ans in rgx_answer.findall(q_block)]
 
-        # Review answers
+        # Review answers (double-check)
         answers = [ans for ans in answers if ans]  # Add non-empty answers
 
         # Check number of answers
         if num_answers and len(answers) != num_answers:
             raise IOError("The number of answers expected ({}) does not match the number of answers found ({}). "
                           "Question: #{}".format(num_answers, len(answers), id_question))
+        else:
+            if len(answers) < 2:
+                print("[WARNING] Skipping question #{}. Less than two answers.".format(id_question))
+                continue
+
         # Add questions
         questions.append([str(id_question).strip().lower(), question, answers])
     return questions
