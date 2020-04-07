@@ -12,6 +12,8 @@ def main():
     parser.add_argument('-t', '--token', help="Token used to split questions and answers", default=None)
     parser.add_argument('-s', '--show_correct', help="Show correct answer", default=True, action='store_true')
     parser.add_argument('-e', '--exclude_words', help="File with excluded words", default=None)
+    parser.add_argument('--single_line', help="Use single line to split elements", default=True, action='store_true')
+    parser.add_argument('--num_answers', help="Number of answers per question", default=None, type=int)
 
     args = parser.parse_args()
     if args.action == "parse":
@@ -20,7 +22,7 @@ def main():
         banned_words = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.path.dirname(input_dir), "banned.txt"))
 
         # Parse quizzes
-        quiz2test.parse_exams(input_dir, output_dir, args.token, banned_words)
+        quiz2test.parse_exams(input_dir, output_dir, args.token, banned_words, args.single_line, args.num_answers)
         print("Done!")
 
     elif args.action == "read":
