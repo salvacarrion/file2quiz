@@ -108,7 +108,7 @@ Solutions:
 To read the output json, type:
 
 ```
-quiz2test --action read 
+quiz2test --action read --input examples/parsed
 ```
 
 Output:
