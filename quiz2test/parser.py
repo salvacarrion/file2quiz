@@ -21,16 +21,17 @@ def parse_exams(input_dir, output_dir, blacklist=None,
     # Get files
     files = check_input(input_dir, extensions={'txt', 'pdf', 'jpg'})
 
-    # Check output
-    create_folder(output_dir)
-
     # Get blacklist
     blacklist = get_blacklist(blacklist)
+
+    # Get quiz folders
+    quizzes_dir = os.path.join(output_dir, "quizzes")
+    create_folder(quizzes_dir)
 
     # Parse exams
     for i, filename in enumerate(files, 1):
         # Read file
-        txt_questions, txt_answers = read_file(filename, blacklist, answer_token, use_ocr, lang, dpi, psm, oem)
+        txt_questions, txt_answers = read_file(filename, blacklist, output_dir, answer_token, use_ocr, lang, dpi, psm, oem)
 
         # Parse questions and correct answers
         questions = parse_questions(txt_questions, single_line, num_answers)
@@ -46,12 +47,12 @@ def parse_exams(input_dir, output_dir, blacklist=None,
 
         # Save file
         fname, extension = os.path.splitext(os.path.basename(filename))
-        savepath = os.path.join(output_dir, "{}.json".format(fname))
+        savepath = os.path.join(quizzes_dir, "{}.json".format(fname))
         save_quiz(quiz, savepath)
         print("{}. Quiz '{}' saved!".format(i, fname))
 
 
-def read_file(filename, blacklist, answer_token, use_ocr, lang, dpi, psm, oem):
+def read_file(filename, blacklist, output_dir, answer_token, use_ocr, lang, dpi, psm, oem):
     txt_questions, txt_answers = "", ""
 
     # Get path values
@@ -63,9 +64,9 @@ def read_file(filename, blacklist, answer_token, use_ocr, lang, dpi, psm, oem):
     if extension == "txt":
         txt = read_txt(filename)
     elif extension == "pdf":
-        txt = read_pdf(filename, use_ocr, lang, dpi, psm, oem)
+        txt = read_pdf(filename, output_dir, use_ocr, lang, dpi, psm, oem)
     elif extension == "jpg":
-        txt = read_image(filename, lang, dpi, psm, oem)
+        txt = read_image(filename, output_dir, lang, dpi, psm, oem)
     else:
         raise IOError("Invalid file extension")
     txt = clean_text(txt, blacklist)

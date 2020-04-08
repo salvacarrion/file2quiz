@@ -1,7 +1,7 @@
 # Quiz2Test
 
-Quiz2Test allows you to parse multiple choice quizzes in raw formats (txt, pdfs, jpg,...), to structured formats such 
-as json, anki, etc.
+Quiz2Test allows you to extract multiple choice questions from unstructured sources (txt, pdfs and images) and 
+save them using a structured format (json, anki)
 
 
 ## Requirements
@@ -33,7 +33,7 @@ py setup.py install --user
 
 ## Usage
 
-By the default, quiz2test searches in the folder `raw/` for files to parse. Then, it saves the parsed files at `parsed`.
+By the default, quiz2test searches in the folder `raw/` for files to parse. Then, it saves the quizzes at `quizzes`.
 
 > There might be additional folders created depending of the actions (scanned, ocr, etc)
 
@@ -124,7 +124,7 @@ To view all the available options, type `quiz2test` in the terminal:
 
 ```
 usage: quiz2test [-h] [-a {parse,read,convert2anki}] [-i INPUT] [-o OUTPUT]
-                 [-t TOKEN] [-s] [-e EXCLUDE_WORDS] [--single_line]
+                 [-t TOKEN] [-s] [-b BLACKLIST] [--single_line]
                  [--num_answers NUM_ANSWERS] [--use_ocr] [--lang LANG]
                  [--dpi DPI] [--psm PSM] [--oem OEM]
 
@@ -133,14 +133,14 @@ optional arguments:
   -a {parse,read,convert2anki}, --action {parse,read,convert2anki}
                         shows output
   -i INPUT, --input INPUT
-                        File or folder to search for the raw exams
+                        File or folder to search for the raw documents
   -o OUTPUT, --output OUTPUT
-                        File or folder to save for the parsed exams
+                        Folder to save the output
   -t TOKEN, --token TOKEN
                         Token used to split questions and answers
   -s, --show_correct    Show correct answer
-  -e EXCLUDE_WORDS, --exclude_words EXCLUDE_WORDS
-                        File with excluded words
+  -b BLACKLIST, --blacklist BLACKLIST
+                        Blacklist file with the excluded words or patterns
   --single_line         Use single line to split elements
   --num_answers NUM_ANSWERS
                         Number of answers per question

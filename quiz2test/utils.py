@@ -5,6 +5,7 @@ import json
 
 import PyPDF2
 from quiz2test import converter
+import pathlib
 
 
 def save_quiz(quiz, filename):
@@ -28,7 +29,7 @@ def read_txt(filename):
         return f.read()
 
 
-def read_pdf(filename, use_ocr, lang, dpi, psm, oem):
+def read_pdf(filename, output_dir, use_ocr, lang, dpi, psm, oem):
     text = ""
     if not use_ocr:
         with open(filename, 'rb') as f:
@@ -37,9 +38,12 @@ def read_pdf(filename, use_ocr, lang, dpi, psm, oem):
             for p in pdf.pages:
                 text += p.extractText() + "\n\n\n"
     else:
+        basedir, tail = os.path.split(filename)
+        fname, extension = os.path.splitext(tail)
+
         # Scan pages
         print("Converting PDF pages to images...")
-        savepath = os.path.abspath(os.path.join(os.path.dirname(filename), "../scanned"))
+        savepath = f"{output_dir}/scanned/{fname}"
         create_folder(savepath)
         converter.pdf2image(filename, savepath, dpi)
 
@@ -48,31 +52,32 @@ def read_pdf(filename, use_ocr, lang, dpi, psm, oem):
         scanned_files.sort(key=tokenize)
 
         # Perform OCR on the scanned pages
-        savepath = os.path.abspath(os.path.join(os.path.dirname(filename), "../ocr"))
-        create_folder(savepath)
+        orc_savepath = f"{output_dir}/ocr/{fname}"
+        create_folder(orc_savepath)
 
         pages_txt = []
         for i, filename in enumerate(scanned_files, 1):
             print("Performing OCR {} of {}".format(i, len(scanned_files)))
-            text = read_image(filename, lang, dpi, psm, oem, is_batch=True)
+            text = read_image(filename, output_dir, lang, dpi, psm, oem, subfolder=orc_savepath)
             pages_txt.append(text)
         text = "\n".join(pages_txt)
     return text
 
 
-def read_image(filename, lang, dpi, psm, oem, is_batch=False):
-    # Create folder
-    savepath = os.path.abspath(os.path.join(os.path.dirname(filename), "../ocr"))
-    if not is_batch:
-        create_folder(savepath)
-
-    # Perform ORC
+def read_image(filename, output_dir, lang, dpi, psm, oem, subfolder=None):
     basedir, tail = os.path.split(filename)
     fname, extension = os.path.splitext(tail)
-    converter.image2text(filename, f"{savepath}/{fname}", lang, dpi, psm, oem)
+
+    # Save path
+    if not subfolder:
+        subfolder = f"{output_dir}/ocr/{subfolder}"
+        create_folder(subfolder)
+
+    # Perform OCR
+    converter.image2text(filename, f"{subfolder}/{fname}", lang, dpi, psm, oem)
 
     # Read file
-    text = read_txt(filename=f"{savepath}/{fname}.txt")
+    text = read_txt(filename=f"{subfolder}/{fname}.txt")
     return text
 
 
@@ -103,8 +108,11 @@ def create_folder(path, empty_folder=True):
             print("Deleting '{}' folder contents...".format(basedir))
             shutil.rmtree(path)
     else:
-        print("'{}' does not exists. Creating folder...".format(basedir))
-    os.mkdir(path)
+        print("Creating directories: {}".format(path))
+
+    # Create path, recursively
+    path = pathlib.Path(path)
+    path.mkdir(parents=True, exist_ok=True)
 
 
 def get_files(path, extensions):
