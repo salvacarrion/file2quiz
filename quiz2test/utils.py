@@ -42,7 +42,7 @@ def read_pdf(filename, output_dir, use_ocr, lang, dpi, psm, oem):
         fname, extension = os.path.splitext(tail)
 
         # Scan pages
-        print("Converting PDF pages to images...")
+        print("Converting PDF to images...")
         savepath = f"{output_dir}/scanned/{fname}"
         create_folder(savepath)
         converter.pdf2image(filename, savepath, dpi)
@@ -70,7 +70,7 @@ def read_image(filename, output_dir, lang, dpi, psm, oem, subfolder=None):
 
     # Save path
     if not subfolder:
-        subfolder = f"{output_dir}/ocr/{subfolder}"
+        subfolder = f"{output_dir}/ocr/{fname}"
         create_folder(subfolder)
 
     # Perform OCR
