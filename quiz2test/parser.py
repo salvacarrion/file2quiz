@@ -15,20 +15,22 @@ rgx_answer_single = re.compile(r'^([a-zA-Z]{1})[\s]*[\.\-\)\t]+([\S\s]*?)$')
 rgx_block_correct_answer = re.compile(r'(^\d+\D*)', re.MULTILINE)
 
 
-def parse_exams(input_dir, output_dir, answer_token=None, banned_file=None, single_line=False, num_answers=None):
+def parse_exams(input_dir, output_dir, blacklist=None,
+                answer_token=None, single_line=False, num_answers=None,
+                use_ocr=None, lang=None, dpi=None, psm=None, oem=None):
     # Get files
-    files = check_input(input_dir)
+    files = check_input(input_dir, extensions={'txt', 'pdf', 'jpg'})
 
     # Check output
-    check_output(output_dir)
+    create_folder(output_dir)
 
-    # Get banned words
-    banned_words = get_banned_words(banned_file)
+    # Get blacklist
+    blacklist = get_blacklist(blacklist)
 
     # Parse exams
     for i, filename in enumerate(files, 1):
         # Read file
-        txt_questions, txt_answers = read_file(filename, banned_words, answer_token)
+        txt_questions, txt_answers = read_file(filename, blacklist, answer_token, use_ocr, lang, dpi, psm, oem)
 
         # Parse questions and correct answers
         questions = parse_questions(txt_questions, single_line, num_answers)
@@ -49,7 +51,7 @@ def parse_exams(input_dir, output_dir, answer_token=None, banned_file=None, sing
         print("{}. Quiz '{}' saved!".format(i, fname))
 
 
-def read_file(filename, banned_words, answer_token):
+def read_file(filename, blacklist, answer_token, use_ocr, lang, dpi, psm, oem):
     txt_questions, txt_answers = "", ""
 
     # Get path values
@@ -61,10 +63,12 @@ def read_file(filename, banned_words, answer_token):
     if extension == "txt":
         txt = read_txt(filename)
     elif extension == "pdf":
-        txt = read_pdf(filename)
+        txt = read_pdf(filename, use_ocr, lang, dpi, psm, oem)
+    elif extension == "jpg":
+        txt = read_image(filename, lang, dpi, psm, oem)
     else:
         raise IOError("Invalid file extension")
-    txt = clean_text(txt, banned_words)
+    txt = clean_text(txt, blacklist)
 
     # Check if the text has to be splitted
     if not answer_token:
@@ -81,9 +85,9 @@ def read_file(filename, banned_words, answer_token):
     return txt_questions.strip(), txt_answers.strip()
 
 
-def clean_text(text, banned_words=None, only_latin=False):
-    if banned_words is None:
-        banned_words = []
+def clean_text(text, blacklist=None, only_latin=False):
+    if blacklist is None:
+        blacklist = []
 
     # Remove unwanted characters
     text = text \
@@ -93,13 +97,14 @@ def clean_text(text, banned_words=None, only_latin=False):
         .replace('“', '').replace('”', '').replace("'", '') \
         .replace("€)", 'c)') \
         .replace("``", '\"') \
-        .replace("´´", '\"') \
+        .replace("´´", '\"')\
+        .replace("’", "\'")\
         .replace("\ufeff", '')
     text = re.sub(r"[ ]{2,}", ' ', text)  # two whitespaces
 
-    # Remove banned words
-    banned_regex = "|".join(banned_words)
-    text = re.sub(r"{}".format(banned_regex), '', text)
+    # Remove words in the blacklist
+    blacklist_regex = "|".join(blacklist)
+    text = re.sub(r"{}".format(blacklist_regex), '', text)
 
     # Only latin characters
     if only_latin:

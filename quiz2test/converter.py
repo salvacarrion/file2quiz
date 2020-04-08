@@ -2,20 +2,31 @@ import os
 import shutil
 import string
 
-from quiz2test.utils import *
+from quiz2test import utils
+
+
+def pdf2image(filename, savepath, dpi=300):
+    # This requires: ImageMagick
+    cmd = f'convert -density {dpi} "{filename}" -depth 8 -strip -background white -alpha off {savepath}/page-%0d.jpg'
+    os.system(cmd)
+
+
+def image2text(filename, savepath, lang="eng", dpi=300, psm=3, oem=3):
+    cmd = f"tesseract {filename} {savepath} -l {lang} --dpi {dpi} --psm {psm} --oem {oem}"
+    os.system(cmd)
 
 
 def convert2anki(input_dir, output_dir):
     # Get files
-    files = check_input(input_dir, extensions={"json"})
+    files = utils.check_input(input_dir, extensions={"json"})
 
     # Check output
-    check_output(output_dir)
+    utils.create_folder(output_dir)
 
     # Parse files
     for i, filename in enumerate(files, 1):
         # Load quiz
-        quiz = load_quiz(filename)
+        quiz = utils.load_quiz(filename)
 
         # Load text
         text = quiz2anki(quiz)
@@ -23,7 +34,7 @@ def convert2anki(input_dir, output_dir):
         # Save file
         fname, extension = os.path.splitext(os.path.basename(filename))
         savepath = os.path.join(output_dir, "{}.txt".format(fname))
-        save_text(text, savepath)
+        utils.save_text(text, savepath)
         print("{}. Anki '{}' saved!".format(i, fname))
 
 
@@ -66,12 +77,12 @@ def quiz2txt(quiz, show_correct):
 
 def json2text(path, show_correct):
     texts = []
-    files = check_input(path, extensions="json")
+    files = utils.check_input(path, extensions="json")
     for filename in files:
         fname, extension = os.path.splitext(os.path.basename(filename))
 
         # Load quiz and text
-        quiz = load_quiz(filename)
+        quiz = utils.load_quiz(filename)
         quiz_txt = quiz2txt(quiz, show_correct)
 
         texts.append((fname, quiz_txt))

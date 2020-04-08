@@ -6,7 +6,12 @@ as json, anki, etc.
 
 ## Requirements
 
-- Python3
+- [Python 3.7+](https://www.python.org/downloads/)
+
+To enable the OCR functionality, you also need:
+
+- [ImageMagick](https://imagemagick.org/)
+- [Tesseract](https://tesseract-ocr.github.io/)
 
 
 ## Installation
@@ -28,36 +33,12 @@ py setup.py install --user
 
 ## Usage
 
-By the default, quiz2test searches in the folder `raw/` (create it) for files to parse. Then it save the parsed files at `parsed`.
+By the default, quiz2test searches in the folder `raw/` for files to parse. Then, it saves the parsed files at `parsed`.
 
-Type `quiz2test` in the terminal to see the available options:
+> There might be additional folders created depending of the actions (scanned, ocr, etc)
 
-```
-usage: quiz2test [-h] [-a {parse,read,convert2anki}] [-i INPUT] [-o OUTPUT]
-                 [-t TOKEN] [-s] [-e EXCLUDE_WORDS] [--single_line]
-                 [--num_answers NUM_ANSWERS]
 
-optional arguments:
-  -h, --help            show this help message and exit
-  -a {parse,read,convert2anki}, --action {parse,read,convert2anki}
-                        shows output
-  -i INPUT, --input INPUT
-                        File or folder to search for the raw exams
-  -o OUTPUT, --output OUTPUT
-                        File or folder to save for the parsed exams
-  -t TOKEN, --token TOKEN
-                        Token used to split questions and answers
-  -s, --show_correct    Show correct answer
-  -e EXCLUDE_WORDS, --exclude_words EXCLUDE_WORDS
-                        File with excluded words
-  --single_line         Use single line to split elements
-  --num_answers NUM_ANSWERS
-                        Number of answers per question
-```
-
-## Example
-
-### Parse
+### Parse files
 
 To parse a file (or all the files in a directory), type:
 
@@ -103,7 +84,7 @@ Solutions:
 ```
 
 
-### Read
+### Read output
 
 To read a json file (or all the json files in a directory), type:
 
@@ -135,4 +116,38 @@ a) Still in progress
 b) You wish...
 c) No, but that would be awesome!
 *d) Yes, like: "" or "", ""
+```
+
+### More options
+
+To view all the available options, type `quiz2test` in the terminal:
+
+```
+usage: quiz2test [-h] [-a {parse,read,convert2anki}] [-i INPUT] [-o OUTPUT]
+                 [-t TOKEN] [-s] [-e EXCLUDE_WORDS] [--single_line]
+                 [--num_answers NUM_ANSWERS] [--use_ocr] [--lang LANG]
+                 [--dpi DPI] [--psm PSM] [--oem OEM]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -a {parse,read,convert2anki}, --action {parse,read,convert2anki}
+                        shows output
+  -i INPUT, --input INPUT
+                        File or folder to search for the raw exams
+  -o OUTPUT, --output OUTPUT
+                        File or folder to save for the parsed exams
+  -t TOKEN, --token TOKEN
+                        Token used to split questions and answers
+  -s, --show_correct    Show correct answer
+  -e EXCLUDE_WORDS, --exclude_words EXCLUDE_WORDS
+                        File with excluded words
+  --single_line         Use single line to split elements
+  --num_answers NUM_ANSWERS
+                        Number of answers per question
+  --use_ocr             Use an OCR (tesseract) to extract the text from the
+                        PDF
+  --lang LANG           [Tesseract] Specify language(s) used for OCR
+  --dpi DPI             [Tesseract] Specify DPI for input image
+  --psm PSM             [Tesseract] Specify page segmentation mode
+  --oem OEM             [Tesseract] Specify OCR Engine mode
 ```
