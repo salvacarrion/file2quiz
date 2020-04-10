@@ -1,13 +1,16 @@
-# Quiz2Test
+# text2quiz
 
-Quiz2Test is a text processing utility that allows you to:
+text2quiz is a text processing utility that extract multiple-choice questions from unstructured sources, among other things.
 
-- **file2text:** Extract text information from a variety of file formats such as images, PDFs, HTML, etc.
-- **text2test:** Extract a multiple-choice test from an unstructured text file.
-- **test2anki:** Export a multiple-choice test into a format that Anki can read.
-- **txt2text:** (not yet implemented) Fixes the sentences and spelling of a broken text; usually needed after an OCR:
+Functions:
+
+- **file2text:** Extract text information from a variety of file formats such as PDFs, HTML, images, etc.
+- **text2quiz:** Parse multiple-choice tests from unstructured sources.
+- **test2anki:** Export the extracted tests into a format that Anki can read.
+- **txt2text:** (not yet implemented) Correct the spelling and sentences from a broken text (post-processing step):
     - e.g.: `thiss€nctence1sbr0ken => This sentence is broken`
 
+Formats supported: `".txt", ".pdf", ".jpg", ".jpeg", ".jfif", ".png", ".tiff", ".bmp", ".pnm", ".html", ".htm", ".doc", ".docx", ".epub"`
 
 ## Requirements
 
@@ -39,7 +42,7 @@ py setup.py install --user
 ## Usage
 
 
-### Extract text
+### Extract text from files
 
 To extract the text of a file (or all the files in a directory), type:
 
@@ -50,7 +53,7 @@ quiz2test --action extract-text --input examples/raw
 > By the default, it searches in the folder `raw/` for files to process. 
 
 
-### Extract multiple-choice test
+### Parsing multiple-choice tests
 
 To parse a multiple-choice test (or all the tests in a directory), type:
 
@@ -61,7 +64,7 @@ quiz2test --action txt2quiz --input examples/txt
 > By the default, it searches in the folder `txt/` for tests to process. 
 
 
-### Export test to Anki 
+### Export tests to Anki 
 
 To export a multiple-choice test (or all the tests in a directory) to anki, type:
 
@@ -72,7 +75,7 @@ quiz2test --action quiz2anki --input examples/quizzes
 > By the default, it searches in the folder `quizzes/` for tests to process. 
 
 
-### Read a test (json) 
+### Read tests (json) 
 
 To read a test (or all the tests in a directory), type:
 

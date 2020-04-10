@@ -20,6 +20,7 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False):
     # Convert quizzes
     quizzes = []
     for i, filename in enumerate(files, 1):
+        basedir, tail = os.path.split(filename)
 
         # Read file
         quiz = reader.read_json(filename)
@@ -29,9 +30,9 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False):
             if file_format == "anki":
                 quiz = quiz2anki(quiz)
             else:
-                raise ValueError(f"Unknown format: {file_format}")
+                raise ValueError(f"Unknown format: {file_format} ({tail})")
         except ValueError as e:
-            print(f"[ERROR] {e}. Skipping quiz")
+            print(f'[ERROR] {e}. Skipping quiz "{tail}"')
             continue
 
         # Build quiz
@@ -41,7 +42,11 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False):
     if save_files:
         for i, (quiz, filename) in enumerate(quizzes):
             fname, ext = utils.get_fname(filename)
-            reader.save_json(quiz, os.path.join(convert_dir, f"{fname}.{format_extension}"))
+            if format_extension == "txt":
+                reader.save_txt(quiz, os.path.join(convert_dir, f"{fname}.{format_extension}"))
+            else:
+                print(f'[ERROR] No method to save "{format_extension}" files (fallback to "txt")')
+                reader.save_txt(quiz, os.path.join(convert_dir, f"{fname}.{format_extension}"))
 
     # Check result
     if not quizzes:
@@ -50,9 +55,9 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False):
     return quizzes
 
 
-def pdf2image(filename, savepath, dpi=300, format="jpg"):
+def pdf2image(filename, savepath, dpi=300, img_format="tiff"):
     # This requires: ImageMagick
-    cmd = f'convert -density {dpi} "{filename}" -depth 8 -strip -background white -alpha off "{savepath}/page-%0d.{format}"'
+    cmd = f'convert -density {dpi} "{filename}" -depth 8 -strip -background white -alpha off "{savepath}/page-%0d.{img_format}"'
     os.system(cmd)
 
 

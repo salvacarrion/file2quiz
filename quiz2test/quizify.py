@@ -15,6 +15,41 @@ rgx_answer_single = re.compile(r'^([a-zA-Z]{1})[\s]*[\.\-\)\t]+([\S\s]*?)$')
 rgx_block_correct_answer = re.compile(r'(^\d+\D*)', re.MULTILINE)
 
 
+def preprocess_text(text, blacklist):
+    # Remove blacklisted words
+    text = utils.replace_words(text, blacklist, replace="")
+    text = clean_text(text)
+    return text
+
+
+def clean_text(text, only_latin=False):
+    # Remove unwanted characters
+    text = text \
+        .replace("\n.", ".") \
+        .replace(" .", ".") \
+        .replace(" º", "º") \
+        .replace('“', '').replace('”', '').replace("'", '') \
+        .replace("€)", 'c)') \
+        .replace("``", '\"') \
+        .replace("´´", '\"') \
+        .replace("’", "\'") \
+        .replace("\ufeff", '')
+    text = re.sub(r"[ ]{2,}", ' ', text)  # two whitespaces
+
+    # Only latin characters
+    if only_latin:
+        text = regex.sub(r"\p{Latin}\p{posix_punct}]+", '', text)
+
+    lines = []
+    for l in text.split('\n'):
+        l = l.strip()
+        if l:
+            lines.append(l)
+    text = "\n".join(lines)
+
+    return text
+
+
 def build_quiz(questions, correct_answers=None):
     quiz = {}
 
@@ -61,8 +96,8 @@ def parse_quiz(input_dir, output_dir, blacklist=None, answer_token=None, single_
         # Read file
         txt_file = reader.read_txt(filename)
 
-        # Remove blacklisted words
-        txt_file = utils.replace_words(txt_file, blacklist, replace="")
+        # Preprocess text
+        txt_file = preprocess_text(txt_file, blacklist)
 
         # Split file (questions / answers)
         txt_questions, txt_answers = txt_file, None

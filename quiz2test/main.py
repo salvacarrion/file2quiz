@@ -7,7 +7,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     # Mandatory parameters
-    CHOICES = {"extract-text", "txt2quiz", "quiz2anki", "read-quiz"}
+    CHOICES = {"extract-text", "text2quiz", "quiz2anki", "read-quiz"}
     parser.add_argument('--action', help="Actions to perform", choices=CHOICES)
     parser.add_argument('--input', help="Input file or directory", default=None)
     parser.add_argument('--output', help="Output directory", default=None)
@@ -38,7 +38,7 @@ def main():
                                args.use_ocr, args.lang, args.dpi, args.psm, args.oem, save_files=True)
         print("Done!")
 
-    elif args.action == "txt2quiz":
+    elif args.action == "text2quiz":
         # Set default paths
         input_dir = os.path.abspath(args.input) if args.input else os.path.abspath(os.path.join(os.getcwd(), "txt"))
         output_dir = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.getcwd()))

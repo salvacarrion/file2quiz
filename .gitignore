@@ -1,3 +1,7 @@
+# Development
+examples/*
+!examples/raw/
+
 # Mac OS
 .DS_Store
 

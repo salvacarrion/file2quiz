@@ -8,7 +8,7 @@ from quiz2test import utils, converter
 
 from io import StringIO
 from bs4 import BeautifulSoup
-from tika import parser
+from tika import parser as tp
 
 
 def extract_text(input_dir, output_dir, use_ocr, lang, dpi, psm, oem, save_files=False):
@@ -29,25 +29,32 @@ def extract_text(input_dir, output_dir, use_ocr, lang, dpi, psm, oem, save_files
     # Save extracted texts
     if save_files:
         for i, (text, filename) in enumerate(extracted_texts):
-            fname, ext = utils.get_fname(filename)
-            save_txt(text, os.path.join(txt_dir, f"{fname}.txt"))
+            basedir, tail = os.path.split(filename)
+            save_txt(text, os.path.join(txt_dir, f"{tail}.txt"))
 
     return extracted_texts
 
 
 def read_file(filename, output_dir, use_ocr, lang, dpi, psm, oem):
     # Get path values
+    basedir, tail = os.path.split(filename)
     fname, extension = utils.get_fname(filename)
+    extension = extension.lower().strip()
 
     # Select method depending on the extension
     if extension in {".txt"}:
         txt_pages = [read_txt(filename)]
     elif extension in {".pdf"}:
         txt_pages = read_pdf(filename, output_dir, use_ocr, lang, dpi, psm, oem)
-    elif extension in {".jpg", ".jpeg", ".png", ".bmp", ".tiff"}:
-        txt_pages = read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=fname)
+    elif extension in {".jpg", ".jpeg", ".jfif", ".png", ".tiff", ".bmp", ".pnm"}:
+        txt_pages = read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=tail)
+    elif extension in {".html", ".htm"}:
+        txt_pages = read_html(filename)
+    elif extension in {".doc", ".docx"}:
+        txt_pages = read_docx(filename)
     else:
-        raise IOError("Invalid file extension")
+        print(f"[WARNING] Unknown format. Trying with generic parser. ({tail})")
+        txt_pages = _read_tika(filename)
 
     return txt_pages  # Must be a list of string
 
@@ -79,24 +86,24 @@ def read_pdf(filename, output_dir, use_ocr, lang, dpi, psm, oem):
         return read_pdf_text(filename)
 
 
-def read_pdf_ocr(filename, output_dir, lang, dpi, psm, oem):
+def read_pdf_ocr(filename, output_dir, lang, dpi, psm, oem, img_format="tiff"):
     pages_txt = []
-    fname, ext = utils.get_fname(filename)
+    basedir, tail = os.path.split(filename)
 
     # Scan pages
     print("Converting PDF to images...")
-    savepath = f"{output_dir}/scanned/{fname}"
+    savepath = f"{output_dir}/scanned/{tail}"
     utils.create_folder(savepath)
-    converter.pdf2image(filename, savepath, dpi)
+    converter.pdf2image(filename, savepath, dpi, img_format=img_format)
 
     # Get files to OCR, and sort them alphabetically (tricky => [page-0, page-1, page-10, page-2,...])
-    scanned_files = utils.get_files(savepath, extensions={".jpg"})
+    scanned_files = utils.get_files(savepath, extensions={f".{img_format}"})
     scanned_files.sort(key=utils.tokenize)
 
     # Perform OCR on the scanned pages
     for i, filename in enumerate(scanned_files, 1):
         print("Performing OCR {} of {}".format(i, len(scanned_files)))
-        text = read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=fname, empty_folder=False)
+        text = read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=tail, empty_folder=False)
         pages_txt.append(text[0])
 
     return pages_txt
@@ -106,11 +113,11 @@ def read_pdf_text(filename):
     pages_txt = []
 
     _buffer = StringIO()
-    data = parser.from_file(filename, xmlContent=True)
+    data = tp.from_file(filename, xmlContent=True)
     xhtml_data = BeautifulSoup(data['content'], features="lxml")
     for page, content in enumerate(xhtml_data.find_all('div', attrs={'class': 'page'})):
         _buffer.write(str(content))
-        parsed_content = parser.from_buffer(_buffer.getvalue())
+        parsed_content = tp.from_buffer(_buffer.getvalue())
         _buffer.truncate()
         pages_txt.append(parsed_content['content'].strip())
 
@@ -118,7 +125,7 @@ def read_pdf_text(filename):
 
 
 def read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=None, empty_folder=True):
-    fname, extension = utils.get_fname(filename)
+    basedir, tail = os.path.split(filename)
 
     # Save path
     savepath = f"{output_dir}/ocr"
@@ -126,10 +133,26 @@ def read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=None, empty
     utils.create_folder(savepath, empty_folder=empty_folder)  # Do not empty if it is part of a batch
 
     # Perform OCR
-    converter.image2text(filename, f"{savepath}/{fname}.txt", lang, dpi, psm, oem)
+    converter.image2text(filename, f"{savepath}/{tail}.txt", lang, dpi, psm, oem)
 
     # Read file
-    text = read_txt(filename=f"{savepath}/{fname}.txt")
+    text = read_txt(filename=f"{savepath}/{tail}.txt")
     return [text]
 
 
+def _read_tika(filename):
+    parsed = tp.from_file(filename)
+    text = parsed["content"].strip()
+    return [text]
+
+
+def read_html(filename):
+    return _read_tika(filename)
+
+
+def read_docx(filename):
+    return _read_tika(filename)
+
+
+def read_epub(filename):
+    return _read_tika(filename)
