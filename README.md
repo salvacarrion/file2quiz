@@ -1,7 +1,12 @@
 # Quiz2Test
 
-Quiz2Test allows you to extract multiple choice questions from unstructured sources (txt, pdfs and images) and 
-save them using a structured format (json, anki)
+Quiz2Test is a text processing utility that allows you to:
+
+- **file2text:** Extract text information from a variety of file formats such as images, PDFs, HTML, etc.
+- **text2test:** Extract a multiple-choice test from an unstructured text file.
+- **test2anki:** Export a multiple-choice test into a format that Anki can read.
+- **txt2text:** (not yet implemented) Fixes the sentences and spelling of a broken text; usually needed after an OCR:
+    - e.g.: `thiss€nctence1sbr0ken => This sentence is broken`
 
 
 ## Requirements
@@ -33,22 +38,58 @@ py setup.py install --user
 
 ## Usage
 
-By the default, quiz2test searches in the folder `raw/` for files to parse. Then, it saves the quizzes at `quizzes`.
 
-> There might be additional folders created depending of the actions (scanned, ocr, etc)
+### Extract text
 
-
-### Parse files
-
-To parse a file (or all the files in a directory), type:
+To extract the text of a file (or all the files in a directory), type:
 
 ```
-quiz2test --action parse --input examples/raw --token "==="
+quiz2test --action extract-text --input examples/raw
 ```
 
-Input file (`examples/raw/demo.txt`):
+> By the default, it searches in the folder `raw/` for files to process. 
+
+
+### Extract multiple-choice test
+
+To parse a multiple-choice test (or all the tests in a directory), type:
 
 ```
+quiz2test --action txt2quiz --input examples/txt
+```
+
+> By the default, it searches in the folder `txt/` for tests to process. 
+
+
+### Export test to Anki 
+
+To export a multiple-choice test (or all the tests in a directory) to anki, type:
+
+```
+quiz2test --action quiz2anki --input examples/quizzes
+```
+
+> By the default, it searches in the folder `quizzes/` for tests to process. 
+
+
+### Read a test (json) 
+
+To read a test (or all the tests in a directory), type:
+
+```
+quiz2test --action read-quiz --input examples/quizzes
+```
+
+> By the default, it searches in the folder `quizzes/` for tests to process. 
+
+
+## Example
+
+Let's say we want extract the quiz from a file like the one below, and then export it to Anki.
+
+Input file: `examples/raw/demo.pdf`:
+
+``` text
 This is a demo in order to
 show how the program works
 
@@ -83,13 +124,25 @@ Solutions:
 3: d
 ```
 
-
-### Read output
-
-To read a json file (or all the json files in a directory), type:
+First need to to extract its text by typing:
 
 ```
-quiz2test --action read --input examples/parsed
+quiz2test --action extract-test --input examples/raw/demo.pdf --token-answer "==="
+```
+
+> `--token-answer "==="` is the token used here to to split the questions and answers
+
+Now we have the text extracted. However, what we have here is an unstructured txt file. 
+To parse this txt file into a structured format like json, we type:
+
+```
+quiz2test --action txt2quiz --input examples/txt
+```
+
+This give us a *.json file that is not easy to read. If we want to see its content, we type:
+
+```
+quiz2test --action read-quiz --input examples/quizzes
 ```
 
 Output:
@@ -118,34 +171,42 @@ c) No, but that would be awesome!
 *d) Yes, like: "" or "", ""
 ```
 
+Now that we have check that our file is correct, we can convert it to anki typing:
+
+```
+quiz2test --action quiz2anki --input examples/quizzes
+```
+
 ### More options
 
 To view all the available options, type `quiz2test` in the terminal:
 
 ```
-usage: quiz2test [-h] [-a {parse,read,convert2anki}] [-i INPUT] [-o OUTPUT]
-                 [-t TOKEN] [-s] [-b BLACKLIST] [--single_line]
-                 [--num_answers NUM_ANSWERS] [--use_ocr] [--lang LANG]
-                 [--dpi DPI] [--psm PSM] [--oem OEM]
+usage: quiz2test [-h] [--action {read-quiz,extract-text,txt2quiz,quiz2anki}]
+                 [--input INPUT] [--output OUTPUT] [--blacklist BLACKLIST]
+                 [--token_answer TOKEN_ANSWER] [--single-line SINGLE_LINE]
+                 [--show_correct SHOW_CORRECT] [--num_answers NUM_ANSWERS]
+                 [--use_ocr USE_OCR] [--lang LANG] [--dpi DPI] [--psm PSM]
+                 [--oem OEM]
 
 optional arguments:
   -h, --help            show this help message and exit
-  -a {parse,read,convert2anki}, --action {parse,read,convert2anki}
-                        shows output
-  -i INPUT, --input INPUT
-                        File or folder to search for the raw documents
-  -o OUTPUT, --output OUTPUT
-                        Folder to save the output
-  -t TOKEN, --token TOKEN
-                        Token used to split questions and answers
-  -s, --show_correct    Show correct answer
-  -b BLACKLIST, --blacklist BLACKLIST
+  --action {read-quiz,extract-text,txt2quiz,quiz2anki}
+                        Actions to perform
+  --input INPUT         Input file or directory
+  --output OUTPUT       Output directory
+  --blacklist BLACKLIST
                         Blacklist file with the excluded words or patterns
-  --single_line         Use single line to split elements
+  --token_answer TOKEN_ANSWER
+                        Token used to split the file between questions and
+                        answers
+  --single-line SINGLE_LINE
+                        Use single line to split elements
+  --show_correct SHOW_CORRECT
+                        Show correct answer
   --num_answers NUM_ANSWERS
                         Number of answers per question
-  --use_ocr             Use an OCR (tesseract) to extract the text from the
-                        PDF
+  --use_ocr USE_OCR     Use an OCR to extract text from the PDFs
   --lang LANG           [Tesseract] Specify language(s) used for OCR
   --dpi DPI             [Tesseract] Specify DPI for input image
   --psm PSM             [Tesseract] Specify page segmentation mode

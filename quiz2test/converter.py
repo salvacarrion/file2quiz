@@ -2,40 +2,65 @@ import os
 import shutil
 import string
 
-from quiz2test import utils
+from quiz2test import utils, reader
 
 
-def pdf2image(filename, savepath, dpi=300):
+def convert_quiz(input_dir, output_dir, file_format, save_files=False):
+    # Get files
+    files = utils.get_files(input_dir, extensions={'.json'})
+
+    # Create quizzes folder
+    convert_dir = os.path.join(output_dir, file_format)
+    utils.create_folder(convert_dir) if save_files else None
+
+    # Set format
+    formats_table = {"anki": "txt"}
+    format_extension = formats_table.get(file_format)
+
+    # Convert quizzes
+    quizzes = []
+    for i, filename in enumerate(files, 1):
+
+        # Read file
+        quiz = reader.read_json(filename)
+
+        try:
+            # Select format
+            if file_format == "anki":
+                quiz = quiz2anki(quiz)
+            else:
+                raise ValueError(f"Unknown format: {file_format}")
+        except ValueError as e:
+            print(f"[ERROR] {e}. Skipping quiz")
+            continue
+
+        # Build quiz
+        quizzes.append((quiz, filename))
+
+    # Save quizzes
+    if save_files:
+        for i, (quiz, filename) in enumerate(quizzes):
+            fname, ext = utils.get_fname(filename)
+            reader.save_json(quiz, os.path.join(convert_dir, f"{fname}.{format_extension}"))
+
+    return quizzes
+
+
+def pdf2image(filename, savepath, dpi=300, format="jpg"):
     # This requires: ImageMagick
-    cmd = f'convert -density {dpi} "{filename}" -depth 8 -strip -background white -alpha off {savepath}/page-%0d.jpg'
+    cmd = f'convert -density {dpi} "{filename}" -depth 8 -strip -background white -alpha off "{savepath}/page-%0d.{format}"'
     os.system(cmd)
 
 
 def image2text(filename, savepath, lang="eng", dpi=300, psm=3, oem=3):
-    cmd = f"tesseract {filename} {savepath} -l {lang} --dpi {dpi} --psm {psm} --oem {oem}"
+    # This requires: Tesseract
+    # Tesseract needs the save path without the extensions
+    basedir, tail = os.path.split(savepath)
+    fname, ext = os.path.splitext(tail)
+
+    # Run command
+    cmd = f'tesseract "{filename}" "{basedir}/{fname}" -l {lang} --dpi {dpi} --psm {psm} --oem {oem}'
     os.system(cmd)
-
-
-def convert2anki(input_dir, output_dir):
-    # Get files
-    files = utils.check_input(input_dir, extensions={"json"})
-
-    # Check output
-    utils.create_folder(output_dir)
-
-    # Parse files
-    for i, filename in enumerate(files, 1):
-        # Load quiz
-        quiz = utils.load_quiz(filename)
-
-        # Load text
-        text = quiz2anki(quiz)
-
-        # Save file
-        fname, extension = os.path.splitext(os.path.basename(filename))
-        savepath = os.path.join(output_dir, "{}.txt".format(fname))
-        utils.save_text(text, savepath)
-        print("{}. Anki '{}' saved!".format(i, fname))
 
 
 def quiz2anki(quiz):
@@ -77,12 +102,12 @@ def quiz2txt(quiz, show_correct):
 
 def json2text(path, show_correct):
     texts = []
-    files = utils.check_input(path, extensions="json")
+    files = utils.get_files(path, extensions=".json")
     for filename in files:
         fname, extension = os.path.splitext(os.path.basename(filename))
 
         # Load quiz and text
-        quiz = utils.load_quiz(filename)
+        quiz = reader.read_json(filename)
         quiz_txt = quiz2txt(quiz, show_correct)
 
         texts.append((fname, quiz_txt))
