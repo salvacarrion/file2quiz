@@ -4,8 +4,8 @@ with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
 setup(name='quiz2test',
-      version='0.1',
-      description='Parse exams in raw formats (txt, pdf, jpg,..) ',
+      version='0.2',
+      description='Parse multiple-choice question tests from unstructured sources',
       url='https://github.com/salvacarrion/quiz2test',
       author='Salva Carrión',
       license='MIT',

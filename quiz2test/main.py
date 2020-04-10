@@ -14,13 +14,13 @@ def main():
 
     # Quizzes
     parser.add_argument('--blacklist', help="Blacklist file with the excluded words or patterns", default=None)
-    parser.add_argument('--token_answer', help="Token used to split the file between questions and answers", default=None)
+    parser.add_argument('--token-answer', help="Token used to split the file between questions and answers", default=None)
     parser.add_argument('--single-line', help="Use single line to split elements", default=False, type=bool)
-    parser.add_argument('--show_correct', help="Show correct answer", default=True, type=bool)
-    parser.add_argument('--num_answers', help="Number of answers per question", default=None, type=int)
+    parser.add_argument('--show-correct', help="Show correct answer", default=True, type=bool)
+    parser.add_argument('--num-answers', help="Number of answers per question", default=None, type=int)
 
     # Tesseract
-    parser.add_argument('--use_ocr', help="Use an OCR to extract text from the PDFs", default=True, type=bool)
+    parser.add_argument('--use-ocr', help="Use an OCR to extract text from the PDFs", default=False, type=bool)
     parser.add_argument('--lang', help="[Tesseract] Specify language(s) used for OCR", default="eng")
     parser.add_argument('--dpi', help="[Tesseract] Specify DPI for input image", default=300, type=int)
     parser.add_argument('--psm', help="[Tesseract] Specify page segmentation mode", default=3, type=int)
@@ -31,7 +31,7 @@ def main():
     if args.action == "extract-text":
         # Set default paths
         input_dir = os.path.abspath(args.input) if args.input else os.path.abspath(os.path.join(os.getcwd(), "raw"))
-        output_dir = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.path.dirname(input_dir)))
+        output_dir = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.getcwd()))
 
         # Extract text
         quiz2test.extract_text(input_dir, output_dir,
@@ -41,8 +41,8 @@ def main():
     elif args.action == "txt2quiz":
         # Set default paths
         input_dir = os.path.abspath(args.input) if args.input else os.path.abspath(os.path.join(os.getcwd(), "txt"))
-        output_dir = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.path.dirname(input_dir)))
-        blacklist = os.path.abspath(args.output) if args.blacklist else os.path.abspath(os.path.join(os.path.dirname(input_dir), "blacklist.txt"))
+        output_dir = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.getcwd()))
+        blacklist = os.path.abspath(args.output) if args.blacklist else os.path.abspath(os.path.join(os.getcwd(), "blacklist.txt"))
 
         # Parse quizzes
         quiz2test.parse_quiz(input_dir, output_dir, blacklist,
@@ -52,7 +52,7 @@ def main():
     elif args.action == "quiz2anki":
         # Set default paths
         input_dir = os.path.abspath(args.input) if args.input else os.path.abspath(os.path.join(os.getcwd(), "quizzes"))
-        output_dir = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.path.dirname(input_dir)))
+        output_dir = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.getcwd()))
 
         # Convert quiz to anki
         quiz2test.convert_quiz(input_dir, output_dir, file_format="anki", save_files=True)

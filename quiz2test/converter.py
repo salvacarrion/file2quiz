@@ -43,6 +43,10 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False):
             fname, ext = utils.get_fname(filename)
             reader.save_json(quiz, os.path.join(convert_dir, f"{fname}.{format_extension}"))
 
+    # Check result
+    if not quizzes:
+        print("[WARNING] No quiz was converted successfully")
+
     return quizzes
 
 

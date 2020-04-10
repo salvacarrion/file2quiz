@@ -1,2 +1,4 @@
 regex==2020.4.4
-PyPDF2==1.26.0
+tika==1.24
+beautifulsoup4==4.9.0
+lxml==4.5.0

@@ -4,9 +4,11 @@ import regex
 import string
 import json
 
-import PyPDF2
-
 from quiz2test import utils, converter
+
+from io import StringIO
+from bs4 import BeautifulSoup
+from tika import parser
 
 
 def extract_text(input_dir, output_dir, use_ocr, lang, dpi, psm, oem, save_files=False):
@@ -103,14 +105,15 @@ def read_pdf_ocr(filename, output_dir, lang, dpi, psm, oem):
 def read_pdf_text(filename):
     pages_txt = []
 
-    # Extract selectable text from the PDF
-    with open(filename, 'rb') as f:
-        pdf = PyPDF2.PdfFileReader(f)
+    _buffer = StringIO()
+    data = parser.from_file(filename, xmlContent=True)
+    xhtml_data = BeautifulSoup(data['content'], features="lxml")
+    for page, content in enumerate(xhtml_data.find_all('div', attrs={'class': 'page'})):
+        _buffer.write(str(content))
+        parsed_content = parser.from_buffer(_buffer.getvalue())
+        _buffer.truncate()
+        pages_txt.append(parsed_content['content'].strip())
 
-        # Read pages
-        for p in pdf.pages:
-            text = p.extractText()
-            pages_txt.append(text)
     return pages_txt
 
 

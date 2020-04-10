@@ -17,14 +17,15 @@ def get_files(path, extensions=None):
         extensions = {".txt", ".pdf", ".html", ".jpg", ".jpeg", ".png", ".bmp", ".tiff"}
 
     # Search
-    files = []
-    for filename in os.listdir(path):
+    valid_files = []
+    files = os.listdir(path) if os.path.isdir(path) else [path]
+    for filename in files:
         fname, ext = get_fname(filename)
 
         # Check if the extension is valid
         if len(extensions) == 0 or ext in extensions:
-            files.append(os.path.join(path, filename))
-    return files
+            valid_files.append(os.path.join(path, filename))
+    return valid_files
 
 
 def create_folder(path, empty_folder=True):

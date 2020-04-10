@@ -106,7 +106,7 @@ broken lines
 a. Maybe...
 b) Yes, but format the "letter [symbol]
 sentence is required
-c	No, that's imposible
+c	No, that's impossible
 d) Yes, but only for text files
 
 3. Can we exclude certain words or patterns?
@@ -127,22 +127,23 @@ Solutions:
 First need to to extract its text by typing:
 
 ```
-quiz2test --action extract-test --input examples/raw/demo.pdf --token-answer "==="
+quiz2test --action extract-text --input examples/raw/demo.pdf --output examples/
 ```
-
-> `--token-answer "==="` is the token used here to to split the questions and answers
 
 Now we have the text extracted. However, what we have here is an unstructured txt file. 
 To parse this txt file into a structured format like json, we type:
 
 ```
-quiz2test --action txt2quiz --input examples/txt
+quiz2test --action txt2quiz --input examples/txt --output examples/ --token-answer "==="
 ```
+
+> `--token-answer "==="` is the token used here to to split the questions and answers
+
 
 This give us a *.json file that is not easy to read. If we want to see its content, we type:
 
 ```
-quiz2test --action read-quiz --input examples/quizzes
+quiz2test --action read-quiz --input examples/quizzes --output examples/
 ```
 
 Output:
@@ -161,7 +162,7 @@ d) who knows????
 2) Can quiz2test deal with broken lines ?
 a) Maybe...
 *b) Yes, but format the "letter [symbol] sentence is required
-c) No, thats imposible
+c) No, thats impossible
 d) Yes, but only for text files
 
 3) Can we exclude certain words or patterns?
@@ -174,7 +175,7 @@ c) No, but that would be awesome!
 Now that we have check that our file is correct, we can convert it to anki typing:
 
 ```
-quiz2test --action quiz2anki --input examples/quizzes
+quiz2test --action quiz2anki --input examples/quizzes --output examples/
 ```
 
 ### More options
