@@ -5,7 +5,7 @@ with open('requirements.txt') as f:
 
 setup(name='quiz2test',
       version='0.2',
-      description='Parse multiple-choice question tests from unstructured sources',
+      description='Parse multiple-choice tests from unstructured sources',
       url='https://github.com/salvacarrion/quiz2test',
       author='Salva Carrión',
       license='MIT',
