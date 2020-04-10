@@ -186,31 +186,31 @@ quiz2test --action quiz2anki --input examples/quizzes --output examples/
 To view all the available options, type `quiz2test` in the terminal:
 
 ```
-usage: quiz2test [-h] [--action {read-quiz,extract-text,txt2quiz,quiz2anki}]
+usage: quiz2test [-h] [--action {extract-text,quiz2anki,text2quiz,read-quiz}]
                  [--input INPUT] [--output OUTPUT] [--blacklist BLACKLIST]
-                 [--token_answer TOKEN_ANSWER] [--single-line SINGLE_LINE]
-                 [--show_correct SHOW_CORRECT] [--num_answers NUM_ANSWERS]
-                 [--use_ocr USE_OCR] [--lang LANG] [--dpi DPI] [--psm PSM]
+                 [--token-answer TOKEN_ANSWER] [--single-line SINGLE_LINE]
+                 [--show-correct SHOW_CORRECT] [--num-answers NUM_ANSWERS]
+                 [--use-ocr USE_OCR] [--lang LANG] [--dpi DPI] [--psm PSM]
                  [--oem OEM]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --action {read-quiz,extract-text,txt2quiz,quiz2anki}
+  --action {extract-text,quiz2anki,text2quiz,read-quiz}
                         Actions to perform
   --input INPUT         Input file or directory
   --output OUTPUT       Output directory
   --blacklist BLACKLIST
                         Blacklist file with the excluded words or patterns
-  --token_answer TOKEN_ANSWER
+  --token-answer TOKEN_ANSWER
                         Token used to split the file between questions and
                         answers
   --single-line SINGLE_LINE
                         Use single line to split elements
-  --show_correct SHOW_CORRECT
+  --show-correct SHOW_CORRECT
                         Show correct answer
-  --num_answers NUM_ANSWERS
+  --num-answers NUM_ANSWERS
                         Number of answers per question
-  --use_ocr USE_OCR     Use an OCR to extract text from the PDFs
+  --use-ocr USE_OCR     Use an OCR to extract text from the PDFs
   --lang LANG           [Tesseract] Specify language(s) used for OCR
   --dpi DPI             [Tesseract] Specify DPI for input image
   --psm PSM             [Tesseract] Specify page segmentation mode
