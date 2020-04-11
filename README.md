@@ -1,6 +1,9 @@
 # file2quiz
 
-file2quiz is a text processing utility to extract multiple-choice questions from unstructured sources, among other things.
+![build](https://github.com/salvacarrion/file2quiz/workflows/build/badge.svg)
+
+**file2quiz** is a text processing utility to extract multiple-choice questions from unstructured sources, among other things.
+
 
 **Functions:**
 
