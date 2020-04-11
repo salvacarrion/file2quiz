@@ -208,7 +208,7 @@ file2quiz --action quiz2anki
 To view all the available options, type `file2quiz` in the terminal:
 
 ```
-usage: file2quiz [-h] [--action {quiz2anki,text2quiz,quiz2text,file2text}]
+usage: file2quiz [-h] [--action {text2quiz,file2text,quiz2text,quiz2anki}]
                  [--input INPUT] [--output OUTPUT] [--blacklist BLACKLIST]
                  [--token-answer TOKEN_ANSWER] [--single-line SINGLE_LINE]
                  [--show-answers] [--num-answers NUM_ANSWERS]
@@ -217,7 +217,7 @@ usage: file2quiz [-h] [--action {quiz2anki,text2quiz,quiz2text,file2text}]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --action {quiz2anki,text2quiz,quiz2text,file2text}
+  --action {text2quiz,file2text,quiz2text,quiz2anki}
                         Actions to perform
   --input INPUT         Input file or directory
   --output OUTPUT       Output file or directory
