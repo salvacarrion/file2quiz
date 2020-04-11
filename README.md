@@ -205,10 +205,10 @@ file2quiz --action quiz2anki
 
 ### More options
 
-To view all the available options, type `file2quiz` in the terminal:
+To view all the available options, type `file2quiz --help` in the terminal:
 
 ```
-usage: file2quiz [-h] [--action {text2quiz,file2text,quiz2text,quiz2anki}]
+usage: file2quiz [-h] [--action {text2quiz,quiz2anki,file2text,quiz2text}]
                  [--input INPUT] [--output OUTPUT] [--blacklist BLACKLIST]
                  [--token-answer TOKEN_ANSWER] [--single-line SINGLE_LINE]
                  [--show-answers] [--num-answers NUM_ANSWERS]
@@ -217,15 +217,16 @@ usage: file2quiz [-h] [--action {text2quiz,file2text,quiz2text,quiz2anki}]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --action {text2quiz,file2text,quiz2text,quiz2anki}
+  --action {text2quiz,quiz2anki,file2text,quiz2text}
                         Actions to perform
   --input INPUT         Input file or directory
   --output OUTPUT       Output file or directory
   --blacklist BLACKLIST
                         Blacklist file with the excluded words or patterns
+                        (regex)
   --token-answer TOKEN_ANSWER
-                        Token used to split the file between questions and
-                        answers
+                        (regex) Token used to split the file between questions
+                        and answers
   --single-line SINGLE_LINE
                         Use single line to split elements
   --show-answers        Show correct answer

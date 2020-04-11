@@ -106,14 +106,17 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, single_line=False, n
     # Split file (questions / answers)
     txt_questions, txt_answers = text, None
     if token_answer:
-        sections = re.split(re.compile(f"{token_answer}", re.IGNORECASE), text)
+        if utils.has_regex(token_answer):
+            print("[INFO] Your answer token contains regular expressions. Regex knowledge is required.")
+
+        sections = re.split(re.compile(f"{token_answer}", re.IGNORECASE|re.MULTILINE), text)
         if len(sections) == 1:
-            print("[WARNING] No correct answer section was detected")
+            print("[WARNING] No correct answer section was detected. (Review the 'answer token', supports regex)")
         elif len(sections) == 2:
             # print("[INFO] Correct answer section detected")
             txt_questions, txt_answers = sections
         else:
-            print("[ERROR] Too many sections were detected")
+            print("[ERROR] Too many sections were detected. (Review the 'answer token', supports regex)")
             exit()
 
     # Parse quiz

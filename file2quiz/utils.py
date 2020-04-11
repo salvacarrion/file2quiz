@@ -68,3 +68,7 @@ def remove_whitespace(text):
     text = re.sub(r'[ ]{2,}', ' ', text)  # two whitespaces
     return text.strip()
 
+
+def has_regex(pattern):
+    metacharacters = "^[.${*(\+)|?<>"
+    return any(c in pattern for c in metacharacters)

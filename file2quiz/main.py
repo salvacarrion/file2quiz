@@ -13,8 +13,8 @@ def main():
     parser.add_argument('--output', help="Output file or directory", default=None)
 
     # Quizzes
-    parser.add_argument('--blacklist', help="Blacklist file with the excluded words or patterns", default=None)
-    parser.add_argument('--token-answer', help="Token used to split the file between questions and answers", default=None)
+    parser.add_argument('--blacklist', help="Blacklist file with the excluded words or patterns (regex)", default=None)
+    parser.add_argument('--token-answer', help="(regex) Token used to split the file between questions and answers", default=None)
     parser.add_argument('--single-line', help="Use single line to split elements", default=False, type=bool)
     parser.add_argument('--show-answers', help="Show correct answer", default=False, action="store_true")
     parser.add_argument('--num-answers', help="Number of answers per question", default=None, type=int)
