@@ -4,16 +4,17 @@ import regex
 import string
 import json
 
-from quiz2test import utils, converter
+from file2quiz import utils, converter
 
 from io import StringIO
 from bs4 import BeautifulSoup
 from tika import parser as tp
 
 
-def extract_text(input_dir, output_dir, use_ocr, lang, dpi, psm, oem, save_files=False):
+def extract_text(input_dir, output_dir, use_ocr=False, lang="eng", dpi=300, psm=3, oem=3, save_files=False,
+                 extensions=None):
     # Get files
-    files = utils.get_files(input_dir)
+    files = utils.get_files(input_dir, extensions)
 
     # Create output dir
     txt_dir = os.path.join(output_dir, "txt")
@@ -52,8 +53,10 @@ def read_file(filename, output_dir, use_ocr, lang, dpi, psm, oem):
         txt_pages = read_html(filename)
     elif extension in {".doc", ".docx"}:
         txt_pages = read_docx(filename)
+    elif extension in {".rtf"}:
+        txt_pages = read_docx(filename)
     else:
-        print(f"[WARNING] Unknown format. Trying with generic parser. ({tail})")
+        print(f"[WARNING] Unknown format (*{extension}). Trying with generic parser. ({tail})")
         txt_pages = _read_tika(filename)
 
     return txt_pages  # Must be a list of string
@@ -150,9 +153,13 @@ def read_html(filename):
     return _read_tika(filename)
 
 
+def read_rtf(filename):
+    return _read_tika(filename)
+
+
 def read_docx(filename):
     return _read_tika(filename)
 
 
-def read_epub(filename):
-    return _read_tika(filename)
+
+

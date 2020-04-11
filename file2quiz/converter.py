@@ -2,10 +2,10 @@ import os
 import shutil
 import string
 
-from quiz2test import utils, reader
+from file2quiz import utils, reader
 
 
-def convert_quiz(input_dir, output_dir, file_format, save_files=False):
+def convert_quiz(input_dir, output_dir, file_format, save_files=False, show_answers=True):
     # Get files
     files = utils.get_files(input_dir, extensions={'.json'})
 
@@ -14,8 +14,14 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False):
     utils.create_folder(convert_dir) if save_files else None
 
     # Set format
-    formats_table = {"anki": "txt"}
-    format_extension = formats_table.get(file_format)
+    FILE_FORMATS = {"text": "txt", "anki": "txt"}
+    file_format = str(file_format).lower().strip().replace('.', '')  # parse formats
+    output_ext = FILE_FORMATS.get(file_format, None)
+
+    # Fallback for unknown extension
+    if output_ext is None:
+        file_format = "text"
+        print(f'[ERROR] No method to save "{output_ext}" files (fallback to "txt")')
 
     # Convert quizzes
     quizzes = []
@@ -30,7 +36,8 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False):
             if file_format == "anki":
                 quiz = quiz2anki(quiz)
             else:
-                raise ValueError(f"Unknown format: {file_format} ({tail})")
+                quiz = quiz2txt(quiz, show_answers)
+
         except ValueError as e:
             print(f'[ERROR] {e}. Skipping quiz "{tail}"')
             continue
@@ -42,11 +49,7 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False):
     if save_files:
         for i, (quiz, filename) in enumerate(quizzes):
             fname, ext = utils.get_fname(filename)
-            if format_extension == "txt":
-                reader.save_txt(quiz, os.path.join(convert_dir, f"{fname}.{format_extension}"))
-            else:
-                print(f'[ERROR] No method to save "{format_extension}" files (fallback to "txt")')
-                reader.save_txt(quiz, os.path.join(convert_dir, f"{fname}.{format_extension}"))
+            reader.save_txt(quiz, os.path.join(convert_dir, f"{fname}.{output_ext}"))
 
     # Check result
     if not quizzes:
@@ -90,7 +93,7 @@ def quiz2anki(quiz):
     return text.strip()
 
 
-def quiz2txt(quiz, show_correct):
+def quiz2txt(quiz, show_answers):
     txt = ""
 
     # Sort questions by key
@@ -99,12 +102,12 @@ def quiz2txt(quiz, show_correct):
         question = quiz[id_question]
 
         # Format question
-        txt += "{}) {}\n".format(id_question, question['question'])
+        txt += "{}. {}\n".format(id_question, question['question'])
 
         # Format answers
         for j, ans in enumerate(question['answers']):
-            isCorrect = "*" if show_correct and j == question.get("correct_answer") else ""
-            txt += "{}{}) {}\n".format(isCorrect, string.ascii_lowercase[j].lower(), ans)
+            is_correct = "*" if show_answers and j == question.get("correct_answer") else ""
+            txt += "{}{}) {}\n".format(is_correct, string.ascii_lowercase[j].lower(), ans)
         txt += "\n"
     return txt.strip()
 

@@ -56,8 +56,11 @@ def tokenize(filename):
 
 
 def replace_words(text, blacklist, replace=""):
-    blacklist_regex = "|".join(blacklist)
-    return re.sub(rf"{blacklist_regex}", replace, text)
+    if blacklist:
+        blacklist_regex = "|".join(blacklist)
+        return re.sub(rf"{blacklist_regex}", replace, text)
+    else:
+        return text
 
 
 def remove_whitespace(text):

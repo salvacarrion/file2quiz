@@ -1,22 +1,22 @@
 import os
 import argparse
-import quiz2test
+import file2quiz
 
 
 def main():
     parser = argparse.ArgumentParser()
 
     # Mandatory parameters
-    CHOICES = {"extract-text", "text2quiz", "quiz2anki", "read-quiz"}
+    CHOICES = {"file2text", "text2quiz", "quiz2text", "quiz2anki"}
     parser.add_argument('--action', help="Actions to perform", choices=CHOICES)
     parser.add_argument('--input', help="Input file or directory", default=None)
-    parser.add_argument('--output', help="Output directory", default=None)
+    parser.add_argument('--output', help="Output file or directory", default=None)
 
     # Quizzes
     parser.add_argument('--blacklist', help="Blacklist file with the excluded words or patterns", default=None)
     parser.add_argument('--token-answer', help="Token used to split the file between questions and answers", default=None)
     parser.add_argument('--single-line', help="Use single line to split elements", default=False, type=bool)
-    parser.add_argument('--show-correct', help="Show correct answer", default=True, type=bool)
+    parser.add_argument('--show-answers', help="Show correct answer", default=False, action="store_true")
     parser.add_argument('--num-answers', help="Number of answers per question", default=None, type=int)
 
     # Tesseract
@@ -28,14 +28,15 @@ def main():
 
     args = parser.parse_args()
 
-    if args.action == "extract-text":
+    # Minor format
+    args.action = args.action.lower().strip() if isinstance(args.action, str) else None
+    if args.action == "file2text":
         # Set default paths
         input_dir = os.path.abspath(args.input) if args.input else os.path.abspath(os.path.join(os.getcwd(), "raw"))
         output_dir = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.getcwd()))
 
         # Extract text
-        quiz2test.extract_text(input_dir, output_dir,
-                               args.use_ocr, args.lang, args.dpi, args.psm, args.oem, save_files=True)
+        file2quiz.extract_text(input_dir, output_dir, args.use_ocr, args.lang, args.dpi, args.psm, args.oem, save_files=True)
         print("Done!")
 
     elif args.action == "text2quiz":
@@ -45,34 +46,22 @@ def main():
         blacklist = os.path.abspath(args.output) if args.blacklist else os.path.abspath(os.path.join(os.getcwd(), "blacklist.txt"))
 
         # Parse quizzes
-        quiz2test.parse_quiz(input_dir, output_dir, blacklist,
-                             args.token_answer, args.single_line, args.num_answers, save_files=True)
+        file2quiz.parse_quiz(input_dir, output_dir, blacklist, args.token_answer, args.single_line, args.num_answers, save_files=True)
         print("Done!")
 
-    elif args.action == "quiz2anki":
+    elif args.action in {"quiz2text", "quiz2anki"}:
         # Set default paths
-        input_dir = os.path.abspath(args.input) if args.input else os.path.abspath(os.path.join(os.getcwd(), "quizzes"))
-        output_dir = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.getcwd()))
+        input_dir = os.path.abspath(args.input) if args.input else os.path.abspath(os.path.join(os.getcwd(), "quizzes/json"))
+        output_dir = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.getcwd(), "quizzes"))
 
-        # Convert quiz to anki
-        quiz2test.convert_quiz(input_dir, output_dir, file_format="anki", save_files=True)
+        # Select format
+        if args.action == "quiz2anki":
+            file_format = "anki"
+        else:
+            file_format = "text"
+        file2quiz.convert_quiz(input_dir, output_dir, file_format=file_format, save_files=True,
+                               show_answers=args.show_answers)
         print("Done!")
-
-    elif args.action == "read-quiz":
-        # Set default paths
-        input_dir = os.path.abspath(args.input) if args.input else os.path.abspath(os.path.join(os.getcwd(), "quizzes"))
-
-        # Read quizzes
-        quiz_txts = quiz2test.json2text(input_dir, args.show_correct)
-
-        # Print quizes
-        for i, (name, quiz_txt) in enumerate(quiz_txts, 1):
-            print("===========================================")
-            print("Quiz #{}: {}".format(i, name))
-            print("===========================================")
-            print("")
-            print(quiz_txt)
-            print("\n\n") if i < len(quiz_txts) else None
 
     else:
         parser.print_help()
