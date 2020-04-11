@@ -9,7 +9,7 @@
 
 - **file2text:** Extract text information from a variety of file formats such as JPEG, PNG, PDFs, DOCX, HTML, etc.
 - **fil2quiz, text2quiz:** Parse multiple-choice tests from unstructured sources into an structured json file.
-- **quiz2(format):** Export json tests into a given format (text, Anki,...)
+- **quiz2text, quiz2anki:** Export json tests into a given format (text, Anki,...)
 - **txt2text:** *(not yet implemented)* Fix a broken text. This post-processing step is usually needed after an OCR.
     - e.g.: `thiss€nctence1sbr0ken => This sentence is broken`
 
@@ -17,7 +17,7 @@
 **Formats supported:**
 ```
 ".txt", ".rtf". ".doc", ".docx", ".pdf", ".html", ".htm", ".epub"`
-".jpg", ".jpeg", ".jfif", ".png", ".tiff", ".bmp", ".pnm", 
+".jpg", ".jpeg", ".jfif", ".png", ".tiff", ".bmp", ".pnm",...
 ```
 
 
@@ -78,6 +78,8 @@ file2quiz --action text2quiz --input txt/ --token-answer "==="
 
 > It is quite convenient to make use of these flags: `--save-txt --show-answers` to also save 
 > the txt version of and show the correct answer.
+> To exclude certain words or patterns from the processing, you can use a text file containing one expression per line. 
+> (It supports regular expressions; check `examples/blacklist.txt)
 
 
 ### Export tests
