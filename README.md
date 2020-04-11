@@ -1,6 +1,6 @@
 # file2quiz
 
-file2quiz is a text processing utility that allows you parse multiple-choice tests from unstructured sources.
+file2quiz is a text processing utility to extract multiple-choice questions from unstructured sources, among other things.
 
 **Functions:**
 
@@ -28,7 +28,7 @@ On Ubuntu/Debian:
 
 ```
 sudo apt install imagemagick
-sudo apt install 
+sudo apt install tesseract-ocr
 ```
 
 On MacOS:

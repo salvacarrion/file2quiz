@@ -8,7 +8,7 @@ import file2quiz
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../"))
 
 
-class TestStringMethods(unittest.TestCase):
+class TestQuizify(unittest.TestCase):
 
     def test_quiz_parser(self):
         # Get paths
