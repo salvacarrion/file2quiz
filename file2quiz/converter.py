@@ -32,12 +32,7 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False, show_answ
         quiz = reader.read_json(filename)
 
         try:
-            # Select format
-            if file_format == "anki":
-                quiz = quiz2anki(quiz)
-            else:
-                quiz = quiz2txt(quiz, show_answers)
-
+            quiz = convert_quiz_json(quiz, file_format, show_answers)
         except ValueError as e:
             print(f'[ERROR] {e}. Skipping quiz "{tail}"')
             continue
@@ -56,6 +51,14 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False, show_answ
         print("[WARNING] No quiz was converted successfully")
 
     return quizzes
+
+
+def convert_quiz_json(quiz, file_format, show_answers=True):
+    # Select format
+    if file_format == "anki":
+        return quiz2anki(quiz)
+    else:  # Fallback to txt
+        return quiz2txt(quiz, show_answers)
 
 
 def pdf2image(filename, savepath, dpi=300, img_format="tiff"):

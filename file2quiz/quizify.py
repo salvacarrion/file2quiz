@@ -23,6 +23,7 @@ def clean_text(text, only_latin=False):
         .replace('“', '\"').replace('”', '\"')\
         .replace('‘', '\'').replace('’', '\'')\
         .replace("€)", 'c)') \
+        .replace("©", 'c)') \
         .replace("``", '\"') \
         .replace("´´", '\"') \
         .replace("’", "\'") \
@@ -105,7 +106,7 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, single_line=False, n
     # Split file (questions / answers)
     txt_questions, txt_answers = text, None
     if token_answer:
-        sections = re.split(token_answer, text)
+        sections = re.split(re.compile(f"{token_answer}", re.IGNORECASE), text)
         if len(sections) == 1:
             print("[WARNING] No correct answer section was detected")
         elif len(sections) == 2:
@@ -133,8 +134,8 @@ def parse_questions(txt, single_line, num_expected_answers=None):
     questions = []
 
     # Define regex (Do do not allow break lines until the first letter of the q/a is found
-    rgx_question = re.compile(r'^(\d+)([^\w\n]+)(?:\w)', re.MULTILINE)
-    rgx_answer = re.compile(r'^([a-zA-Z]{1})([^\w\n]+)(?:\w)', re.MULTILINE)
+    rgx_question = re.compile(r'^(\d+)([^\w\n]+)(?=\w)', re.MULTILINE)
+    rgx_answer = re.compile(r'^([a-zA-Z]{1})([^\w\n]+)(?=\w)', re.MULTILINE)
 
     # Define delimiters
     DELIMITER = "@\n@\n@\n"

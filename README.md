@@ -161,7 +161,9 @@ To parse this txt file into a structured format like json, we type:
 file2quiz --action text2quiz --token-answer "==="
 ```
 
-> `--token-answer "==="` is the token used here to to split the questions and answers
+> `--token-answer "==="` is the token used here to to split the questions and answers, and it's case insensitive.
+> OCRs work better with letters that symbols, so if you're processing an image, we recommend you to use a 
+> word as token (e.g.: `--token-answer "soluciones"`)
 
 
 This gave us a json file. If we want read its content, have to convert it to a text file
