@@ -61,16 +61,7 @@ py setup.py install --user
 
 ## Usage
 
-
-### Extract text from files
-
-To extract the text of a file (or all the files in a directory), type:
-
-```
-file2quiz --action extract-text --input examples/raw
-```
-
-> By the default, it searches in the folder `raw/` for files to process. 
+To run these examples, go to the `examples/` folder from the source.
 
 
 ### Parsing multiple-choice tests
@@ -78,32 +69,41 @@ file2quiz --action extract-text --input examples/raw
 To parse a multiple-choice test (or all the tests in a directory), type:
 
 ```
-file2quiz --action txt2quiz --input examples/txt
+# Option 1: (all supported formats)
+file2quiz --action file2quiz --input raw/ --token-answer "^(===|solutions:)"
+
+# Option 2: (only *.txt)
+file2quiz --action text2quiz --input txt/ --token-answer "==="
 ```
 
-> By the default, it searches in the folder `txt/` for tests to process. 
+> It is quite convenient to make use of these flags: `--save-txt --show-answers` to also save 
+> the txt version of and show the correct answer.
 
 
-### Export tests to Anki 
+### Export tests
 
-To export a multiple-choice test (or all the tests in a directory) to anki, type:
-
-```
-file2quiz --action quiz2anki --input examples/quizzes
-```
-
-> By the default, it searches in the folder `quizzes/json` for tests to process. 
-
-
-### Read tests (json) 
-
-To read a test (or all the tests in a directory), type:
+To export a multiple-choice test (or all the tests in a directory), type:
 
 ```
-file2quiz --action read-quiz --input examples/quizzes
+# Export to txt:
+file2quiz --action quiz2text --input quizzes/json/
+
+# Export to Anki:
+file2quiz --action quiz2anki --input quizzes/json/
 ```
 
-> By the default, it searches in the folder `quizzes/json` for tests to process. 
+> By the default, it searches in the folder `quizzes/json/` for tests to process. 
+
+
+### Extract text from files
+
+To extract the text of a file (or all the files in a directory), type:
+
+```
+file2quiz --action file2text --input raw/
+```
+
+> By the default, it searches in the folder `raw/` for files to process. 
 
 
 ## Example
@@ -155,7 +155,6 @@ First need to to extract its text by typing:
 file2quiz --action file2text --input raw/demo.pdf --output .
 ```
 
-> We're execute these commands inside the `examples/` folder
 > You can parse the quiz directly using this options: `--action file2quiz`
 
 
@@ -163,12 +162,12 @@ Now we have the text extracted. However, what we have here is an unstructured tx
 To parse this txt file into a structured format like json, we type:
 
 ```
-file2quiz --action text2quiz --token-answer "==="
+file2quiz --action text2quiz --token-answer "^(===|solutions:)"
 ```
 
-> `--token-answer "==="` is the token used here to to split the questions and answers, and it's case insensitive.
+> `--token-answer` is the token used here to to split the questions and answers, and it's case insensitive.
 > OCRs work better with letters that symbols, so if you're processing an image, we recommend you to use a 
-> word as token (e.g.: `--token-answer "soluciones"`)
+> word as token (e.g.: `--token-answer "solutions"`)
 
 
 This gave us a json file. If we want read its content, have to convert it to a text file
@@ -211,20 +210,20 @@ To view all the available options, type `file2quiz --help` in the terminal:
 
 ```
 usage: file2quiz [-h]
-                 [--action {file2text,text2quiz,file2quiz,quiz2text,quiz2anki}]
-                 [--input INPUT] [--output OUTPUT]
-                 [--question-mode {auto,single-line}] [--blacklist BLACKLIST]
-                 [--token-answer TOKEN_ANSWER] [--show-answers]
-                 [--num-answers NUM_ANSWERS] [--use-ocr USE_OCR] [--lang LANG]
-                 [--dpi DPI] [--psm PSM] [--oem OEM]
+                 [--action {file2quiz,file2text,text2quiz,quiz2text,quiz2anki}]
+                 [--input INPUT] [--output OUTPUT] [--mode {auto,single-line}]
+                 [--blacklist BLACKLIST] [--token-answer TOKEN_ANSWER]
+                 [--show-answers] [--num-answers NUM_ANSWERS] [--save-txt]
+                 [--use-ocr USE_OCR] [--lang LANG] [--dpi DPI] [--psm PSM]
+                 [--oem OEM]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --action {file2text,text2quiz,file2quiz,quiz2text,quiz2anki}
+  --action {file2quiz,file2text,text2quiz,quiz2text,quiz2anki}
                         Actions to perform
   --input INPUT         Input file or directory
   --output OUTPUT       Output file or directory
-  --question-mode {auto,single-line}
+  --mode {auto,single-line}
                         Mode used to detect questions
   --blacklist BLACKLIST
                         Blacklist file with the excluded words or patterns
@@ -235,6 +234,7 @@ optional arguments:
   --show-answers        Show correct answer
   --num-answers NUM_ANSWERS
                         Number of answers per question
+  --save-txt            Save quizzes in txt
   --use-ocr USE_OCR     Use an OCR to extract text from the PDFs
   --lang LANG           [Tesseract] Specify language(s) used for OCR
   --dpi DPI             [Tesseract] Specify DPI for input image

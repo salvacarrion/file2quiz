@@ -7,17 +7,17 @@ from file2quiz import reader
 from file2quiz import utils
 
 
-def preprocess_text(text, blacklist, question_mode):
+def preprocess_text(text, blacklist, mode):
     # Remove blacklisted words
     text = utils.replace_words(text, blacklist, replace="")
     text = clean_text(text)
 
-    # Futher preprocessing
-    if question_mode == "auto":
+    # Specific preprocessing
+    if mode == "auto":
         lines = [l for l in text.split('\n') if l]
         text = "\n".join(lines)
     else:
-        asdsd = 33
+        pass
 
     return text
 
@@ -71,8 +71,8 @@ def build_quiz(questions, solutions=None):
     return quiz
 
 
-def parse_quiz(input_dir, output_dir, blacklist=None, token_answer=None, question_mode="auto", num_answers=None,
-               save_files=False):
+def parse_quiz(input_dir, output_dir, blacklist=None, token_answer=None, num_answers=None,
+               mode="auto", save_files=False):
     # Get files
     files = utils.get_files(input_dir, extensions={'.txt'})
 
@@ -94,7 +94,7 @@ def parse_quiz(input_dir, output_dir, blacklist=None, token_answer=None, questio
         txt_file = reader.read_txt(filename)
 
         # Parse txt quiz
-        quiz = parse_quiz_txt(txt_file, blacklist, token_answer, question_mode, num_answers)
+        quiz = parse_quiz_txt(txt_file, blacklist, token_answer, num_answers, mode)
         quizzes.append((quiz, filename))
 
     # Save quizzes
@@ -106,9 +106,12 @@ def parse_quiz(input_dir, output_dir, blacklist=None, token_answer=None, questio
     return quizzes
 
 
-def parse_quiz_txt(text, blacklist=None, token_answer=None, question_mode="auto", num_answers=None):
+def parse_quiz_txt(text, blacklist=None, token_answer=None,  num_answers=None, mode="auto"):
     # Preprocess text
-    text = preprocess_text(text, blacklist, question_mode)
+    text = preprocess_text(text, blacklist, mode)
+
+    # Define delimiter
+    DELIMITER = "\n@\n@\n@\n"
 
     # Split file (questions / answers)
     txt_questions, txt_answers = text, None
@@ -116,7 +119,11 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, question_mode="auto"
         if utils.has_regex(token_answer):
             print("[INFO] Your answer token contains regular expressions. Regex knowledge is required.")
 
-        sections = re.split(re.compile(f"{token_answer}", re.IGNORECASE|re.MULTILINE), text)
+        # Split section (first match)
+        rxg_splitter = re.compile(f"{token_answer}", re.IGNORECASE|re.MULTILINE)
+        text = re.sub(rxg_splitter, DELIMITER, text, count=1)
+        sections = text.split(DELIMITER)
+
         if len(sections) == 1:
             print("[WARNING] No correct answer section was detected. (Review the 'answer token', supports regex)")
         elif len(sections) == 2:
@@ -127,7 +134,7 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, question_mode="auto"
             exit()
 
     # Parse quiz
-    questions = parse_questions(txt_questions, question_mode, num_answers)
+    questions = parse_questions(txt_questions, num_answers, mode)
     solutions = parse_solutions(txt_answers, letter2num=True) if txt_answers else None
 
     # Check number of questions and answers
@@ -140,14 +147,16 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, question_mode="auto"
     return quiz
 
 
-def parse_questions(txt, question_mode, num_expected_answers=None):
-    if question_mode == "auto":
+def parse_questions(txt, num_expected_answers=None, mode="auto"):
+    if mode == "auto":
         return parse_questions_auto(txt, num_expected_answers)
+    elif mode == "single-line":
+        return parse_questions_single_line(txt, num_expected_answers)
     else:
-        raise ValueError(f"Unknown question mode: '{question_mode}'")
+        raise ValueError(f"Unknown question mode: '{mode}'")
 
 
-def parse_questions_auto(txt, num_expected_answers=None):
+def parse_questions_auto(txt, num_expected_answers):
     questions = []
 
     # Define regex (Do do not allow break lines until the first letter of the q/a is found
@@ -155,51 +164,106 @@ def parse_questions_auto(txt, num_expected_answers=None):
     rgx_answer = re.compile(r'^([a-zA-Z]{1})([^\w\n]+)(?=\w)', re.MULTILINE)
 
     # Define delimiters
-    DELIMITER = "@\n@\n@\n"
+    DELIMITER = "\n@\n@\n@\n"
 
     # Split block of questions
     txt = re.sub(rgx_question, rf"{DELIMITER}\1\2", txt)
     raw_questions = txt.split(DELIMITER)
     raw_questions = [q for q in raw_questions[1:] if q.strip()] if raw_questions else []  # We can split the first chunk
 
-    for i, raw_question in enumerate(raw_questions):
+    # Parse questions
+    for i, raw_question in enumerate(raw_questions, 1):
 
         # Split block of answers
         raw_answers = re.sub(rgx_answer, rf"{DELIMITER}\1\2", raw_question)
         raw_answers = raw_answers.split(DELIMITER)
 
-        if num_expected_answers:
-            question = " ".join(raw_answers[:-num_expected_answers])  # We allow the question to be "break" the rules
-            answers = raw_answers[-num_expected_answers:]  # Select answers first
-        else:
-            question = raw_answers[0]  # First item is the answer
-            answers = raw_answers[1:]
+        # Normalize question items
+        parsed_question = parse_normalize_question(raw_answers, num_expected_answers, i)
 
-        # Get question ID
-        id_question = re.search(rgx_question, question).group(1)
-        id_question = id_question.lower().strip()
+        # Add question
+        if parsed_question:
+            id_question, question, answers = parsed_question
 
-        # Remove identifiers and clean text
-        question = utils.remove_whitespace(re.sub(rgx_question, "", question))
-        answers = [utils.remove_whitespace(re.sub(rgx_answer, "", ans)) for ans in answers]
-
-        # Check number of answers
-        num_answers = len(answers)
-        if num_answers < 2:
-            print(f'[WARNING] Less than two answers. Skipping question: [Q: "{question}"]')
-            continue
-        else:
-            # Check against expected answers
-            if num_expected_answers:
-                if num_answers != num_expected_answers:
-                    print(f'[WARNING] {num_answers} answers found / {num_expected_answers} expected. '
-                          f'Skipping question: [Q: "{question}"]')
-                    continue
-
-        # Add questions
-        questions.append([id_question, question, answers])
+            # Add questions
+            questions.append([id_question, question, answers])
     return questions
 
+
+def parse_questions_single_line(txt, num_expected_answers):
+    questions = []
+
+    # Define regex (Do do not allow break lines until the first letter of the q/a is found
+    rgx_question = re.compile(r'([\n]{2,})', re.MULTILINE)
+    rgx_answer = re.compile(r'^([a-zA-Z]{1})([^\w\n]+)(?=\w)', re.MULTILINE)
+
+    # Define delimiters
+    DELIMITER = "\n@\n@\n@\n"
+
+    # Split block of questions
+    txt = re.sub(rgx_question, rf"{DELIMITER}", txt)
+    raw_questions = txt.split(DELIMITER)
+    raw_questions = [q for q in raw_questions if q.strip()] if raw_questions else []  # We can split the first chunk
+
+    # Parse questions
+    for i, raw_question in enumerate(raw_questions, 1):
+
+        # Split question and answers
+        raw_answers = raw_question.split('\n')
+
+        # Normalize question items
+        parsed_question = parse_normalize_question(raw_answers, num_expected_answers, i)
+
+        # Add question
+        if parsed_question:
+            id_question, question, answers = parsed_question
+
+            # Add questions
+            questions.append([id_question, question, answers])
+    return questions
+
+
+def parse_normalize_question(question_blocks, num_expected_answers, suggested_id, remove_ids=True):
+    rgx_question_id = re.compile(r'^(\d+)([^\w\n]+)(?=[a-zA-Z])', re.MULTILINE)
+    rgx_answer_id = re.compile(r'^([a-zA-Z]{1})([^\w\n]+)(?=[a-zA-Z])', re.MULTILINE)
+
+    # Remove whitespaces
+    question_blocks = [utils.remove_whitespace(item) for item in question_blocks]
+
+    # Get questions and answers
+    if num_expected_answers:
+        question = " ".join(question_blocks[:-num_expected_answers])  # We allow the question to be "break" the rules
+        answers = question_blocks[-num_expected_answers:]  # Select answers first
+    else:
+        question = question_blocks[0]  # First item is the answer
+        answers = question_blocks[1:]
+
+    # Get question ID
+    id_question = re.search(rgx_question_id, question)
+    if id_question:
+        id_question = id_question.group(1)
+    else:
+        id_question = str(suggested_id)
+    id_question = id_question.lower().strip()
+
+    # Remove identifiers and clean text
+    if remove_ids:
+        question = re.sub(rgx_question_id, "", question)
+        answers = [re.sub(rgx_answer_id, "", ans) for ans in answers]
+
+    # Check number of answers
+    num_answers = len(answers)
+    if num_answers < 2:
+        print(f'[WARNING] Less than two answers. Skipping question: [Q: "{question}"]')
+        return None
+    else:
+        # Check against expected answers
+        if num_expected_answers:
+            if num_answers != num_expected_answers:
+                print(f'[WARNING] {num_answers} answers found / {num_expected_answers} expected. '
+                      f'Skipping question: [Q: "{question}"]')
+                return None
+    return id_question, question, answers
 
 
 def parse_solutions(txt, letter2num=True):

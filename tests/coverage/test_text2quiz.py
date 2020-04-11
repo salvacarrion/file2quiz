@@ -14,7 +14,7 @@ class TestQuizify(unittest.TestCase):
         # Get paths
         input_dir = os.path.join(ROOT_DIR, "examples/raw")
         output_dir = os.path.join(ROOT_DIR, "examples")
-        token_answer = "SolUtiOns"  # Check case insensitivity // There are problems with this token: "==="
+        token_answer = "^(===|solUtIoNs:)"  # Check case insensitivity // There are problems with this token: "==="
         extensions = {".txt", ".pdf", ".rtf", ".docx", ".html", ".jpg"}
 
         # Parse raw files
