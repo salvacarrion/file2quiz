@@ -8,7 +8,7 @@
 **Functions:**
 
 - **file2text:** Extract text information from a variety of file formats such as JPEG, PNG, PDFs, DOCX, HTML, etc.
-- **text2quiz:** Parse multiple-choice tests from unstructured sources into an structured json file.
+- **fil2quiz, text2quiz:** Parse multiple-choice tests from unstructured sources into an structured json file.
 - **quiz2(format):** Export json tests into a given format (text, Anki,...)
 - **txt2text:** *(not yet implemented)* Fix a broken text. This post-processing step is usually needed after an OCR.
     - e.g.: `thiss€nctence1sbr0ken => This sentence is broken`
@@ -156,6 +156,8 @@ file2quiz --action file2text --input raw/demo.pdf --output .
 ```
 
 > We're execute these commands inside the `examples/` folder
+> You can parse the quiz directly using this options: `--action file2quiz`
+
 
 Now we have the text extracted. However, what we have here is an unstructured txt file. 
 To parse this txt file into a structured format like json, we type:
@@ -208,27 +210,28 @@ file2quiz --action quiz2anki
 To view all the available options, type `file2quiz --help` in the terminal:
 
 ```
-usage: file2quiz [-h] [--action {text2quiz,quiz2anki,file2text,quiz2text}]
-                 [--input INPUT] [--output OUTPUT] [--blacklist BLACKLIST]
-                 [--token-answer TOKEN_ANSWER] [--single-line SINGLE_LINE]
-                 [--show-answers] [--num-answers NUM_ANSWERS]
-                 [--use-ocr USE_OCR] [--lang LANG] [--dpi DPI] [--psm PSM]
-                 [--oem OEM]
+usage: file2quiz [-h]
+                 [--action {file2text,text2quiz,file2quiz,quiz2text,quiz2anki}]
+                 [--input INPUT] [--output OUTPUT]
+                 [--question-mode {auto,single-line}] [--blacklist BLACKLIST]
+                 [--token-answer TOKEN_ANSWER] [--show-answers]
+                 [--num-answers NUM_ANSWERS] [--use-ocr USE_OCR] [--lang LANG]
+                 [--dpi DPI] [--psm PSM] [--oem OEM]
 
 optional arguments:
   -h, --help            show this help message and exit
-  --action {text2quiz,quiz2anki,file2text,quiz2text}
+  --action {file2text,text2quiz,file2quiz,quiz2text,quiz2anki}
                         Actions to perform
   --input INPUT         Input file or directory
   --output OUTPUT       Output file or directory
+  --question-mode {auto,single-line}
+                        Mode used to detect questions
   --blacklist BLACKLIST
                         Blacklist file with the excluded words or patterns
                         (regex)
   --token-answer TOKEN_ANSWER
                         (regex) Token used to split the file between questions
                         and answers
-  --single-line SINGLE_LINE
-                        Use single line to split elements
   --show-answers        Show correct answer
   --num-answers NUM_ANSWERS
                         Number of answers per question

@@ -7,10 +7,18 @@ from file2quiz import reader
 from file2quiz import utils
 
 
-def preprocess_text(text, blacklist):
+def preprocess_text(text, blacklist, question_mode):
     # Remove blacklisted words
     text = utils.replace_words(text, blacklist, replace="")
     text = clean_text(text)
+
+    # Futher preprocessing
+    if question_mode == "auto":
+        lines = [l for l in text.split('\n') if l]
+        text = "\n".join(lines)
+    else:
+        asdsd = 33
+
     return text
 
 
@@ -34,9 +42,8 @@ def clean_text(text, only_latin=False):
         text = regex.sub(r"\p{Latin}\p{posix_punct}]+", '', text)
 
     # Strip whitespace line-by-line
-    lines = [l.strip() for l in text.split('\n') if l.strip()]
+    lines = [l.strip() for l in text.split('\n')]
     text = "\n".join(lines)
-
     return text
 
 
@@ -64,7 +71,7 @@ def build_quiz(questions, solutions=None):
     return quiz
 
 
-def parse_quiz(input_dir, output_dir, blacklist=None, token_answer=None, single_line=False, num_answers=None,
+def parse_quiz(input_dir, output_dir, blacklist=None, token_answer=None, question_mode="auto", num_answers=None,
                save_files=False):
     # Get files
     files = utils.get_files(input_dir, extensions={'.txt'})
@@ -87,7 +94,7 @@ def parse_quiz(input_dir, output_dir, blacklist=None, token_answer=None, single_
         txt_file = reader.read_txt(filename)
 
         # Parse txt quiz
-        quiz = parse_quiz_txt(txt_file, blacklist=blacklist, token_answer=token_answer, single_line=single_line, num_answers=num_answers)
+        quiz = parse_quiz_txt(txt_file, blacklist, token_answer, question_mode, num_answers)
         quizzes.append((quiz, filename))
 
     # Save quizzes
@@ -99,9 +106,9 @@ def parse_quiz(input_dir, output_dir, blacklist=None, token_answer=None, single_
     return quizzes
 
 
-def parse_quiz_txt(text, blacklist=None, token_answer=None, single_line=False, num_answers=None):
+def parse_quiz_txt(text, blacklist=None, token_answer=None, question_mode="auto", num_answers=None):
     # Preprocess text
-    text = preprocess_text(text, blacklist)
+    text = preprocess_text(text, blacklist, question_mode)
 
     # Split file (questions / answers)
     txt_questions, txt_answers = text, None
@@ -120,7 +127,7 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, single_line=False, n
             exit()
 
     # Parse quiz
-    questions = parse_questions(txt_questions, single_line, num_answers)
+    questions = parse_questions(txt_questions, question_mode, num_answers)
     solutions = parse_solutions(txt_answers, letter2num=True) if txt_answers else None
 
     # Check number of questions and answers
@@ -133,7 +140,14 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, single_line=False, n
     return quiz
 
 
-def parse_questions(txt, single_line, num_expected_answers=None):
+def parse_questions(txt, question_mode, num_expected_answers=None):
+    if question_mode == "auto":
+        return parse_questions_auto(txt, num_expected_answers)
+    else:
+        raise ValueError(f"Unknown question mode: '{question_mode}'")
+
+
+def parse_questions_auto(txt, num_expected_answers=None):
     questions = []
 
     # Define regex (Do do not allow break lines until the first letter of the q/a is found
@@ -185,6 +199,7 @@ def parse_questions(txt, single_line, num_expected_answers=None):
         # Add questions
         questions.append([id_question, question, answers])
     return questions
+
 
 
 def parse_solutions(txt, letter2num=True):

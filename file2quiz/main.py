@@ -7,15 +7,16 @@ def main():
     parser = argparse.ArgumentParser()
 
     # Mandatory parameters
-    CHOICES = {"file2text", "text2quiz", "quiz2text", "quiz2anki"}
+    CHOICES = ["file2text", "text2quiz", "file2quiz", "quiz2text", "quiz2anki"]
     parser.add_argument('--action', help="Actions to perform", choices=CHOICES)
     parser.add_argument('--input', help="Input file or directory", default=None)
     parser.add_argument('--output', help="Output file or directory", default=None)
 
     # Quizzes
+    QUESTION_MODES = ["auto", "single-line"]
+    parser.add_argument('--question-mode', help="Mode used to detect questions", choices=QUESTION_MODES, default=QUESTION_MODES[0])
     parser.add_argument('--blacklist', help="Blacklist file with the excluded words or patterns (regex)", default=None)
     parser.add_argument('--token-answer', help="(regex) Token used to split the file between questions and answers", default=None)
-    parser.add_argument('--single-line', help="Use single line to split elements", default=False, type=bool)
     parser.add_argument('--show-answers', help="Show correct answer", default=False, action="store_true")
     parser.add_argument('--num-answers', help="Number of answers per question", default=None, type=int)
 
@@ -36,7 +37,26 @@ def main():
         output_dir = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.getcwd()))
 
         # Extract text
-        file2quiz.extract_text(input_dir, output_dir, args.use_ocr, args.lang, args.dpi, args.psm, args.oem, save_files=True)
+        file2quiz.extract_text(input_dir, output_dir, args.use_ocr, args.lang, args.dpi, args.psm, args.oem,
+                               save_files=True)
+        print("Done!")
+
+    elif args.action == "file2quiz":
+        # Set default paths
+        input_dir = os.path.abspath(args.input) if args.input else os.path.abspath(os.path.join(os.getcwd(), "raw"))
+        output_dir = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.getcwd()))
+        blacklist = os.path.abspath(args.output) if args.blacklist else os.path.abspath(os.path.join(os.getcwd(), "blacklist.txt"))
+
+        # Parse raw files
+        file2quiz.extract_text(input_dir, output_dir, args.use_ocr, args.lang, args.dpi, args.psm, args.oem,
+                               save_files=True)
+
+        # Parse quizzes
+        input_dir = os.path.join(output_dir, "txt")
+        file2quiz.parse_quiz(input_dir, output_dir, blacklist, args.token_answer, args.question_mode, args.num_answers,
+                             save_files=True)
+
+        # Extract text
         print("Done!")
 
     elif args.action == "text2quiz":
@@ -46,7 +66,8 @@ def main():
         blacklist = os.path.abspath(args.output) if args.blacklist else os.path.abspath(os.path.join(os.getcwd(), "blacklist.txt"))
 
         # Parse quizzes
-        file2quiz.parse_quiz(input_dir, output_dir, blacklist, args.token_answer, args.single_line, args.num_answers, save_files=True)
+        file2quiz.parse_quiz(input_dir, output_dir, blacklist, args.token_answer, args.question_mode, args.num_answers,
+                             save_files=True)
         print("Done!")
 
     elif args.action in {"quiz2text", "quiz2anki"}:
