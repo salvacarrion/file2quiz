@@ -132,9 +132,9 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, single_line=False, n
 def parse_questions(txt, single_line, num_expected_answers=None):
     questions = []
 
-    # Define regex
-    rgx_question = re.compile(r'^(\d+)([\s\W]+)', re.MULTILINE)
-    rgx_answer = re.compile(r'^([a-zA-Z]{1})([\s\W]+)', re.MULTILINE)
+    # Define regex (Do do not allow break lines until the first letter of the q/a is found
+    rgx_question = re.compile(r'^(\d+)([^\w\n]+)(?:\w)', re.MULTILINE)
+    rgx_answer = re.compile(r'^([a-zA-Z]{1})([^\w\n]+)(?:\w)', re.MULTILINE)
 
     # Define delimiters
     DELIMITER = "@\n@\n@\n"

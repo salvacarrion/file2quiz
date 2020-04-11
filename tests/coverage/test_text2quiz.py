@@ -14,8 +14,8 @@ class TestStringMethods(unittest.TestCase):
         # Get paths
         input_dir = os.path.join(ROOT_DIR, "examples/raw")
         output_dir = os.path.join(ROOT_DIR, "examples")
-        token_answer = "==="
-        extensions = {".txt", ".pdf", ".rtf", ".docx", ".html"}
+        token_answer = "Solutions:"  # There are problems with this token: "==="
+        extensions = {".txt", ".pdf", ".rtf", ".docx", ".html", ".jpg"}
 
         # Parse raw files
         print("Extracting text...")
