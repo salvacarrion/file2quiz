@@ -10,7 +10,12 @@ file2quiz is a text processing utility that allows you parse multiple-choice tes
 - **txt2text:** *(not yet implemented)* Fix a broken text. This post-processing step is usually needed after an OCR.
     - e.g.: `thiss€nctence1sbr0ken => This sentence is broken`
 
-**Formats supported:** `".txt", ".pdf", ".jpg", ".jpeg", ".jfif", ".png", ".tiff", ".bmp", ".pnm", ".html", ".htm", ".doc", ".docx", ".epub"`
+
+**Formats supported:**
+```
+".txt", ".rtf". ".doc", ".docx", ".pdf", ".html", ".htm", ".epub"`
+".jpg", ".jpeg", ".jfif", ".png", ".tiff", ".bmp", ".pnm", 
+```
 
 
 ## Requirements
@@ -84,7 +89,7 @@ To export a multiple-choice test (or all the tests in a directory) to anki, type
 file2quiz --action quiz2anki --input examples/quizzes
 ```
 
-> By the default, it searches in the folder `quizzes/` for tests to process. 
+> By the default, it searches in the folder `quizzes/json` for tests to process. 
 
 
 ### Read tests (json) 
@@ -95,7 +100,7 @@ To read a test (or all the tests in a directory), type:
 file2quiz --action read-quiz --input examples/quizzes
 ```
 
-> By the default, it searches in the folder `quizzes/` for tests to process. 
+> By the default, it searches in the folder `quizzes/json` for tests to process. 
 
 
 ## Example
@@ -168,23 +173,19 @@ file2quiz --action quiz2text --show-answers
 Output:
 
 ```
-===========================================
-Quiz #1: demo
-===========================================
-
-1) Can file2quiz manage multiple choice questions with weird formats?
-*a) Yes! Thats its purpose!
-b) no, it cant
+1. Can file2quiz manage multiple-choice questions with weird formats?
+*a) Yes! That's its purpose!
+b) no, it can't
 c) it depends...
 d) who knows????
 
-2) Can file2quiz deal with broken lines ?
+2. Can file2quiz deal with broken lines ?
 a) Maybe...
-*b) Yes, but format the "letter [symbol] sentence is required
-c) No, thats impossible
+*b) Yes, but the format "[letter] [symbol] [sentence]" is required
+c) No, that's impossible
 d) Yes, but only for text files
 
-3) Can we exclude certain words or patterns?
+3. Can we exclude certain words or patterns?
 a) Still in progress
 b) You wish...
 c) No, but that would be awesome!
