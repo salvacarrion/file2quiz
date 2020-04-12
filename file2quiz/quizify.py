@@ -9,7 +9,7 @@ from file2quiz import utils
 # (num/letter) + (symbols+/space*)
 RGX_BASE = r"([\t ]*[\p{posix_punct}\t]+[\t ]*)"
 # Questions startswith [¡¿, letter] or [number with a whitespace,+,-];  weird case "1.2.2" => (Not a question"
-RGX_QUESTION = regex.compile(r"^(\d+)"       + RGX_BASE + "(?=[¡¿\t ]*[a-zA-Z]+|[-+\t ]+[\d]+)", regex.MULTILINE)
+RGX_QUESTION = regex.compile(r"^(\d+[\d\.]*?)"       + RGX_BASE + "(?=[¡¿\t ]*[a-zA-Z]+|[-+\t ]+[\d]+)", regex.MULTILINE)
 # Questions startswith [¡¿, letter] or [number with a whitespace,+,-]; weird case "a.2.2" => "a) 2.2"
 RGX_ANSWER = regex.compile(r"^([\d\.]*[a-zA-Z]{1})" + RGX_BASE + "(?=[¡¿\t ]*[a-zA-Z]+|[-+\t ]?[\d]+)", regex.MULTILINE)
 
@@ -299,6 +299,7 @@ def parse_normalize_question(question_blocks, num_expected_answers, suggested_id
     id_question = regex.search(RGX_QUESTION, question)
     if id_question:
         id_question = id_question.group(1)
+        id_question = regex.sub(r"\.*$", "", id_question)
     else:
         id_question = str(suggested_id)
     id_question = id_question.lower().strip()
@@ -318,9 +319,12 @@ def parse_solutions(txt, letter2num=True):
     solutions = regex.findall(rgx_solutions, txt)
 
     for i, (id_question, id_answer) in enumerate(solutions):
-        # Format IDs
+        # Format question IDs
         id_question = id_question.lower().strip()
+        id_question = regex.sub(r"\.*$", "", id_question)
+
         id_answer = id_answer.lower().strip()
+        id_answer = regex.sub(r"\.*$", "", id_answer)
 
         # Letter to number (a => 0, b => 1, c => 2,...)
         id_answer = string.ascii_lowercase.index(id_answer) if letter2num else id_answer

@@ -15,7 +15,7 @@ class TestQuizify(unittest.TestCase):
         input_dir = os.path.join(ROOT_DIR, "examples/raw")
         output_dir = os.path.join(ROOT_DIR, "examples")
         token_answer = "^(===|solUtIoNs:)"  # Check case insensitivity // There are problems with this token: "==="
-        extensions = {".txt", ".pdf", ".rtf", ".docx", ".html", ".jpg"}
+        extensions = {".txt", ".pdf", ".rtf", ".docx", ".html", ".png"}
 
         # Parse raw files
         print("Extracting text...")
@@ -43,22 +43,22 @@ class TestQuizify(unittest.TestCase):
             # Check question IDs
             self.assertTrue(quiz.get("1").get('id') == "1")
             self.assertTrue(quiz.get("2").get('id') == "2")
-            self.assertTrue(quiz.get("3").get('id') == "3")
+            self.assertTrue(quiz.get("3.1").get('id') == "3.1")
 
             # Check question lengths (characters)
             self.assertTrue(len(quiz.get("1").get('question')) > 30)
             self.assertTrue(len(quiz.get("2").get('question')) > 30)
-            self.assertTrue(len(quiz.get("3").get('question')) > 30)
+            self.assertTrue(len(quiz.get("3.1").get('question')) > 30)
 
             # Check question answers
             self.assertEqual(len(quiz.get("1").get('answers')), 4)
             self.assertEqual(len(quiz.get("2").get('answers')), 4)
-            self.assertEqual(len(quiz.get("3").get('answers')), 4)
+            self.assertEqual(len(quiz.get("3.1").get('answers')), 4)
 
             # Check correct answers
             self.assertEqual(quiz.get("1").get('correct_answer'), 0)
             self.assertEqual(quiz.get("2").get('correct_answer'), 1)
-            self.assertEqual(quiz.get("3").get('correct_answer'), 3)
+            self.assertEqual(quiz.get("3.1").get('correct_answer'), 3)
 
     def test_splitter(self):
         txt = """
@@ -95,7 +95,7 @@ class TestQuizify(unittest.TestCase):
             b) Example answer #2
             c) Example answer #3
             
-            6 ))) This question is
+            6.1 ))) This question is
             6.1 and is quite hard :   
             6.1a) Example answer #1
             6b) Example answer #2
@@ -105,7 +105,7 @@ class TestQuizify(unittest.TestCase):
             
             1-A 2.b
             3    // C
-            4 b 5A,(6b)
+            4 b 5A,(6.1b)
             """
 
         # Parse quiz
@@ -120,6 +120,7 @@ class TestQuizify(unittest.TestCase):
         self.assertTrue(quizzes.get("3").get('id') == "3")
         self.assertTrue(quizzes.get("4").get('id') == "4")
         self.assertTrue(quizzes.get("5").get('id') == "5")
+        self.assertTrue(quizzes.get("6.1").get('id') == "6.1")
 
         # Check question answers
         self.assertEqual(len(quizzes.get("1").get('answers')), 3)
@@ -127,6 +128,7 @@ class TestQuizify(unittest.TestCase):
         self.assertEqual(len(quizzes.get("3").get('answers')), 3)
         self.assertEqual(len(quizzes.get("4").get('answers')), 3)
         self.assertEqual(len(quizzes.get("5").get('answers')), 3)
+        self.assertEqual(len(quizzes.get("6.1").get('answers')), 3)
 
         # Check question lengths (characters)
         self.assertTrue(quizzes.get("1").get('answers')[0] == "1")
@@ -143,6 +145,7 @@ class TestQuizify(unittest.TestCase):
         self.assertEqual(quizzes.get("3").get('correct_answer'), 2)
         self.assertEqual(quizzes.get("4").get('correct_answer'), 1)
         self.assertEqual(quizzes.get("5").get('correct_answer'), 0)
+        self.assertEqual(quizzes.get("6.1").get('correct_answer'), 1)
 
 
 if __name__ == '__main__':

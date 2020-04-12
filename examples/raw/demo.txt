@@ -20,15 +20,15 @@ b)) Yes, but
 c --- No, that's impossible
 d ]] Yes, but only for text files
 
-3.- Can we exclude certain words or patterns?
+3.1- Can we exclude certain words or patterns?
 3a - Still in progress
 3.2b )   You wish...
-3.3.c . No, but that would be awesome!
-3.4.d.-Yes, like: "WORD1TODELETE" or "pattern1", "pattern123"
+3.3c . No, but that would be awesome!
+3.4d.-Yes, like: "WORD1TODELETE" or "pattern1", "pattern123"
 
 
 
 ===
 Solutions:
 (1. A)
-2 - b    3: d
+2 - b    3.1: d

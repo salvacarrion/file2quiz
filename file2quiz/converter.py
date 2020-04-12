@@ -82,7 +82,7 @@ def quiz2anki(quiz):
     text = ""
 
     # Sort questions by key
-    keys = sorted(quiz.keys(), key=lambda x: int(x))
+    keys = sorted(quiz.keys(), key=utils.tokenize)
     for i, id_question in enumerate(keys):
         question = quiz[id_question]
 
@@ -100,7 +100,7 @@ def quiz2txt(quiz, show_answers):
     txt = ""
 
     # Sort questions by key
-    keys = sorted(quiz.keys(), key=lambda x: int(x))
+    keys = sorted(quiz.keys(), key=utils.tokenize)
     for i, id_question in enumerate(keys):
         question = quiz[id_question]
 
