@@ -4,7 +4,7 @@ with open('requirements.txt') as f:
     requirements = f.read().splitlines()
 
 setup(name='file2quiz',
-      version='0.4',
+      version='0.5',
       description='Text processing utility to extract multiple-choice questions from unstructured sources.',
       url='https://github.com/salvacarrion/file2quiz',
       author='Salva Carrión',
