@@ -97,8 +97,8 @@ class TestQuizify(unittest.TestCase):
             
             6 ))) This question is
             6.1 and is quite hard :   
-            a) Example answer #1
-            b) Example answer #2
+            6.1a) Example answer #1
+            6b) Example answer #2
             c) Example answer #3
             
             ===
