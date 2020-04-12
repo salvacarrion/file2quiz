@@ -14,18 +14,21 @@ class TestQuizify(unittest.TestCase):
         # Get paths
         input_dir = os.path.join(ROOT_DIR, "examples/raw")
         output_dir = os.path.join(ROOT_DIR, "examples")
+        blacklist_path = os.path.join(ROOT_DIR, "examples/blacklist.txt")
         token_answer = "^(===|solUtIoNs:)"  # Check case insensitivity // There are problems with this token: "==="
         extensions = {".txt", ".pdf", ".rtf", ".docx", ".html", ".png"}
 
         # Parse raw files
         print("Extracting text...")
-        texts_extracted = file2quiz.extract_text(input_dir, output_dir, extensions=extensions, save_files=True)
+        texts_extracted = file2quiz.extract_text(input_dir, output_dir, blacklist_path, extensions=extensions,
+                                                 save_files=True)
 
         # Parse texts into quizzes
         print("Parsing quizzes...")
         quizzes = []
+        blacklist = file2quiz.reader.read_blacklist(blacklist_path)
         for text, filename in texts_extracted:
-            quiz = file2quiz.parse_quiz_txt(text, token_answer=token_answer)
+            quiz = file2quiz.parse_quiz_txt(text, blacklist, token_answer=token_answer)
             quizzes.append((quiz, filename))
 
         # Check texts extracted and quizzes

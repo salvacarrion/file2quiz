@@ -21,12 +21,12 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False, show_answ
     # Fallback for unknown extension
     if output_ext is None:
         file_format = "text"
-        print(f'[ERROR] No method to save "{output_ext}" files (fallback to "txt")')
+        print(f'\t- [ERROR] No method to save "{output_ext}" files (fallback to "txt")')
 
     # Convert quizzes
     quizzes = []
     for i, filename in enumerate(files, 1):
-        basedir, tail = os.path.split(filename)
+        tail, basedir = utils.get_tail(filename)
 
         # Read file
         quiz = reader.read_json(filename)
@@ -34,11 +34,16 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False, show_answ
         try:
             quiz = convert_quiz_json(quiz, file_format, show_answers)
         except ValueError as e:
-            print(f'[ERROR] {e}. Skipping quiz "{tail}"')
+            print(f'\t- [ERROR] {e}. Skipping quiz "{tail}"')
             continue
 
         # Build quiz
         quizzes.append((quiz, filename))
+
+        # Show info
+        if len(quiz) == 0:
+            print(f"\t- [WARNING] No quiz were found ({tail})")
+        print(f"\t- [INFO] Converting to '{file_format}' done! ({tail})")
 
     # Save quizzes
     if save_files:
@@ -48,7 +53,7 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False, show_answ
 
     # Check result
     if not quizzes:
-        print("[WARNING] No quiz was converted successfully")
+        print("\t- [WARNING] No quiz was converted successfully")
 
     return quizzes
 

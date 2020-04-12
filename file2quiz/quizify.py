@@ -104,21 +104,17 @@ def build_quiz(questions, solutions=None):
             if id_question in quiz:
                 quiz[id_question]['correct_answer'] = answer
             else:
-                print("[WARNING] Missing question for answer '{}'".format(id_question))
+                print("\t- [WARNING] Missing question for answer '{}'".format(id_question))
     return quiz
 
 
-def parse_quiz(input_dir, output_dir, blacklist=None, token_answer=None, num_answers=None,
+def parse_quiz(input_dir, output_dir, blacklist_path=None, token_answer=None, num_answers=None,
                mode="auto", save_files=False):
     # Get files
     files = utils.get_files(input_dir, extensions={'.txt'})
 
     # Get blacklist
-    if blacklist and os.path.isfile(blacklist):
-        blacklist = reader.read_txt(blacklist)
-        blacklist = list(set([l.strip() for l in blacklist.split("\n") if l.strip()]))
-    else:
-        blacklist = []
+    blacklist = reader.read_blacklist(blacklist_path)
 
     # Create quizzes folder
     quizzes_dir = os.path.join(output_dir, "quizzes/json")
@@ -128,13 +124,26 @@ def parse_quiz(input_dir, output_dir, blacklist=None, token_answer=None, num_ans
     quizzes = []
     total_questions = 0
     for i, filename in enumerate(files, 1):
+        tail, basedir = utils.get_tail(filename)
+        print("")
+        print(f'==============================================================')
+        print(f'[INFO] Parsing quiz: "{tail}"')
+        print(f'==============================================================')
+
         # Read file
         txt_file = reader.read_txt(filename)
 
         # Parse txt quiz
         quiz = parse_quiz_txt(txt_file, blacklist, token_answer, num_answers, mode)
+
+        # Keep count of total questions
         total_questions += len(quiz)
         quizzes.append((quiz, filename))
+
+        # Show info
+        if len(quiz) == 0:
+            print(f"\t- [WARNING] No quizzes were found ({tail})")
+        print(f"\t- [INFO] Parsing done! ({tail})")
 
     # Save quizzes
     if save_files:
@@ -142,11 +151,13 @@ def parse_quiz(input_dir, output_dir, blacklist=None, token_answer=None, num_ans
             fname, ext = utils.get_fname(filename)
             reader.save_json(quiz, os.path.join(quizzes_dir, f"{fname}.json"))
 
-    print("=========================================")
-    print("=========================================")
+    print("")
+    print("==============================================================")
+    print("==============================================================")
     print(f"[INFO] Documents parsed: {len(quizzes)}")
     print(f"[INFO] Questions found: {total_questions}")
-    print("=========================================")
+    print("==============================================================")
+    print("==============================================================")
     return quizzes
 
 
@@ -161,7 +172,7 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None,  num_answers=None, m
     txt_questions, txt_answers = text, None
     if token_answer:
         if utils.has_regex(token_answer):
-            print("[INFO] Your answer token contains regular expressions. Regex knowledge is required.")
+            print("\t- [INFO] Your answer token contains regular expressions. Regex knowledge is required.")
 
         # Split section (first match)
         rxg_splitter = regex.compile(f"{token_answer}", regex.IGNORECASE | regex.MULTILINE)
@@ -169,12 +180,12 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None,  num_answers=None, m
         sections = text.split(DELIMITER)
 
         if len(sections) == 1:
-            print("[WARNING] No correct answer section was detected. (Review the 'answer token', supports regex)")
+            print("\t- [WARNING] No correct answer section was detected. (Review the 'answer token', supports regex)")
         elif len(sections) == 2:
-            # print("[INFO] Correct answer section detected")
+            # print("\t- [INFO] Correct answer section detected")
             txt_questions, txt_answers = sections
         else:
-            print("[ERROR] Too many sections were detected. (Review the 'answer token', supports regex)")
+            print("\t- [ERROR] Too many sections were detected. (Review the 'answer token', supports regex)")
             exit()
 
     # Parse quiz
@@ -183,7 +194,7 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None,  num_answers=None, m
 
     # Check number of questions and answers
     if solutions and len(questions) != len(solutions):
-        print(f"[WARNING] The number of questions ({len(questions)}) "
+        print(f"\t- [WARNING] The number of questions ({len(questions)}) "
               f"and solutions ({len(solutions)}) do not match")
 
     # Build quiz
@@ -267,7 +278,7 @@ def parse_normalize_question(question_blocks, num_expected_answers, suggested_id
 
     # Check number of items
     if len(question_blocks) < 2+1:
-        print(f'[INFO] Block with less than two answers. Skipping block: [Q: "{q_summary(question_blocks[0])}"]')
+        print(f'\t- [INFO] Block with less than two answers. Skipping block: [Q: "{q_summary(question_blocks[0])}"]')
         return None
 
     # Set policy depending on the questions and answers
@@ -275,13 +286,13 @@ def parse_normalize_question(question_blocks, num_expected_answers, suggested_id
     if num_expected_answers:
         # Too many answers
         if len(question_blocks) > num_expected_answers + 1:
-            print(f"[WARNING] More answers ({len(question_blocks)-1}) than expected ({num_expected_answers}). "
+            print(f"\t- [WARNING] More answers ({len(question_blocks)-1}) than expected ({num_expected_answers}). "
                   f'Inferring question [Q: "{q_summary(question_blocks[0])}]"')
             policy = "multiline-question"
 
         # Too few answers
         elif len(question_blocks) < num_expected_answers + 1:
-            print(f"[WARNING] Less answers ({len(question_blocks)-1}) than expected ({num_expected_answers}). "
+            print(f"\t- [WARNING] Less answers ({len(question_blocks)-1}) than expected ({num_expected_answers}). "
                   f'Inferring question [Q: "{q_summary(question_blocks[0])}"]')
 
     # Choose questions and answers

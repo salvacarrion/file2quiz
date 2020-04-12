@@ -36,10 +36,10 @@ def main():
         # Set default paths
         input_dir = os.path.abspath(args.input) if args.input else os.path.abspath(os.path.join(os.getcwd(), "raw"))
         output_dir = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.getcwd()))
-        blacklist = os.path.abspath(args.blacklist) if args.blacklist else os.path.abspath(os.path.join(os.getcwd(), "blacklist.txt"))
+        blacklist_path = os.path.abspath(args.blacklist) if args.blacklist else os.path.abspath(os.path.join(os.getcwd(), "blacklist.txt"))
 
         # Extract text
-        file2quiz.extract_text(input_dir, output_dir, blacklist, args.use_ocr, args.lang, args.dpi, args.psm, args.oem,
+        file2quiz.extract_text(input_dir, output_dir, blacklist_path, args.use_ocr, args.lang, args.dpi, args.psm, args.oem,
                                save_files=True)
         print("Done!")
 
@@ -48,16 +48,16 @@ def main():
         input_folder = "raw" if args.action == "file2quiz" else "text2quiz"
         input_dir = os.path.abspath(args.input) if args.input else os.path.abspath(os.path.join(os.getcwd(), input_folder))
         output_dir = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.getcwd()))
-        blacklist = os.path.abspath(args.blacklist) if args.blacklist else os.path.abspath(os.path.join(os.getcwd(), "blacklist.txt"))
+        blacklist_path = os.path.abspath(args.blacklist) if args.blacklist else os.path.abspath(os.path.join(os.getcwd(), "blacklist.txt"))
 
         # Parse raw files
         if args.action == "file2quiz":
-            file2quiz.extract_text(input_dir, output_dir, blacklist, args.use_ocr, args.lang, args.dpi, args.psm, args.oem,
+            file2quiz.extract_text(input_dir, output_dir, blacklist_path, args.use_ocr, args.lang, args.dpi, args.psm, args.oem,
                                    save_files=True)
 
         # Parse quizzes
         input_dir = os.path.join(output_dir, "txt")
-        file2quiz.parse_quiz(input_dir, output_dir, blacklist, args.token_answer, args.num_answers,
+        file2quiz.parse_quiz(input_dir, output_dir, blacklist_path, args.token_answer, args.num_answers,
                              args.mode, save_files=True)
 
         # Convert to txt

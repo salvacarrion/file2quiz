@@ -6,6 +6,11 @@ import pathlib
 import regex
 
 
+def get_tail(filename):
+    basedir, tail = os.path.split(filename)
+    return tail, basedir
+
+
 def get_fname(filename):
     basedir, tail = os.path.split(filename)
     fname, ext = os.path.splitext(tail)
@@ -36,10 +41,10 @@ def create_folder(path, empty_folder=True):
     # Check output path
     if os.path.exists(path):
         if empty_folder:
-            print("Deleting '{}' folder contents...".format(basedir))
+            print("\t- [INFO] Deleting '{}' folder contents...".format(basedir))
             shutil.rmtree(path)
     else:
-        print("Creating directories: {}".format(path))
+        print("\t- [INFO] Creating directories: {}".format(path))
 
     # Create path, recursively
     path = pathlib.Path(path)

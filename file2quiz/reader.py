@@ -4,24 +4,20 @@ import regex
 import string
 import json
 
-from file2quiz import utils, converter
+from file2quiz import utils, converter, reader
 
 from io import StringIO
 from bs4 import BeautifulSoup
 from tika import parser as tp
 
 
-def extract_text(input_dir, output_dir, blacklist=None, use_ocr=False, lang="eng", dpi=300, psm=3, oem=3, save_files=False,
+def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang="eng", dpi=300, psm=3, oem=3, save_files=False,
                  extensions=None):
     # Get files
     files = utils.get_files(input_dir, extensions)
 
     # Get blacklist
-    if blacklist and os.path.isfile(blacklist):
-        blacklist = read_txt(blacklist)
-        blacklist = list(set([l.strip() for l in blacklist.split("\n") if l.strip()]))
-    else:
-        blacklist = []
+    blacklist = reader.read_blacklist(blacklist_path)
 
     # Create output dir
     txt_dir = os.path.join(output_dir, "txt")
@@ -30,6 +26,12 @@ def extract_text(input_dir, output_dir, blacklist=None, use_ocr=False, lang="eng
     # Extract text
     extracted_texts = []  # list of tuples (text, filename)
     for i, filename in enumerate(files, 1):
+        tail, basedir = utils.get_tail(filename)
+        print("")
+        print(f'==============================================================')
+        print(f'[INFO] Extracting text from: "{tail}"')
+        print(f'==============================================================')
+
         # Read file
         txt_pages = read_file(filename, output_dir, use_ocr, lang, dpi, psm, oem)
         text = "\n".join(txt_pages)
@@ -39,6 +41,11 @@ def extract_text(input_dir, output_dir, blacklist=None, use_ocr=False, lang="eng
 
         # Add extracted texts
         extracted_texts.append((text, filename))
+
+        # Show info
+        if not text.strip():
+            print(f"\t- [WARNING] No text was found ({tail})")
+        print(f"\t- [INFO] Extracting done! ({tail})")
 
     # Save extracted texts
     if save_files:
@@ -69,7 +76,7 @@ def read_file(filename, output_dir, use_ocr, lang, dpi, psm, oem):
     elif extension in {".rtf"}:
         txt_pages = read_docx(filename)
     else:
-        print(f"[WARNING] Unknown format (*{extension}). Trying with generic parser. ({tail})")
+        print(f"\t- [WARNING] Unknown format (*{extension}). Trying with generic parser. ({tail})")
         txt_pages = _read_tika(filename)
 
     return txt_pages  # Must be a list of string
@@ -107,7 +114,7 @@ def read_pdf_ocr(filename, output_dir, lang, dpi, psm, oem, img_format="tiff"):
     basedir, tail = os.path.split(filename)
 
     # Scan pages
-    print("Converting PDF to images...")
+    print("\t- [INFO] Converting PDF to images...")
     savepath = f"{output_dir}/scanned/{tail}"
     utils.create_folder(savepath)
     converter.pdf2image(filename, savepath, dpi, img_format=img_format)
@@ -118,7 +125,7 @@ def read_pdf_ocr(filename, output_dir, lang, dpi, psm, oem, img_format="tiff"):
 
     # Perform OCR on the scanned pages
     for i, filename in enumerate(scanned_files, 1):
-        print("Performing OCR {} of {}".format(i, len(scanned_files)))
+        print("\t- [INFO] Performing OCR {} of {}".format(i, len(scanned_files)))
         text = read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=tail, empty_folder=False)
         pages_txt.append(text[0])
 
@@ -180,5 +187,12 @@ def read_docx(filename):
     return _read_tika(filename)
 
 
-
-
+def read_blacklist(path):
+    # Get blacklist
+    if path and os.path.isfile(path):
+        blacklist = read_txt(path)
+        blacklist = list(set([l.strip() for l in blacklist.split("\n") if l.strip()]))
+        print("\t- [INFO] Using blacklist file. (Regex knowledge is required).")
+    else:
+        blacklist = []
+    return blacklist
