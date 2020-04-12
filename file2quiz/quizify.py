@@ -17,9 +17,9 @@ from file2quiz import utils
 
 # (num/letter) + (symbols+/space*)
 RGX_BASE = r"([\t ]*[\p{posix_punct}\t]+[\t ]*)"
-# Questions startswith ¡¿, letter or a [number with a whitespace]
+# Questions startswith [¡¿, letter] or [number with a whitespace,+,-]
 RGX_QUESTION = regex.compile(r"^(\d+)"       + RGX_BASE + "(?=[¡¿\t ]*[a-zA-Z]+|[-+\t ]+[\d]+)", regex.MULTILINE)
-# answers startswith ¡¿, letter or a [number with a whitespace]
+# Questions startswith [¡¿, letter] or [number with a whitespace,+,-]
 RGX_ANSWER = regex.compile(r"^([a-zA-Z]{1})" + RGX_BASE + "(?=[¡¿\t ]*[a-zA-Z]+|[-+\t ]?[\d]+)", regex.MULTILINE)
 
 
@@ -84,6 +84,12 @@ def normalize_answers(text, remove_id=True):
 
     # First letter upper case
     text = text[0].upper() + text[1:] if len(text) > 2 else text
+    return text
+
+
+def q_summary(text, length=50):
+    text = text.replace("\n", "")
+    text = text if len(text)<length else text[:length] + "..."
     return text
 
 
@@ -270,7 +276,7 @@ def parse_normalize_question(question_blocks, num_expected_answers, suggested_id
 
     # Check number of items
     if len(question_blocks) < 2+1:
-        print(f'[INFO] Block with less than two answers. Skipping block: [Q: "{question_blocks[0]}"]')
+        print(f'[INFO] Block with less than two answers. Skipping block: [Q: "{q_summary(question_blocks[0])}"]')
         return None
 
     # Set policy depending on the questions and answers
@@ -279,13 +285,13 @@ def parse_normalize_question(question_blocks, num_expected_answers, suggested_id
         # Too many answers
         if len(question_blocks) > num_expected_answers + 1:
             print(f"[WARNING] More answers ({len(question_blocks)-1}) than expected ({num_expected_answers}). "
-                  f"Inferring question [Q: {question_blocks[0]}]")
+                  f'Inferring question [Q: "{q_summary(question_blocks[0])}]"')
             policy = "multiline-question"
 
         # Too few answers
         elif len(question_blocks) < num_expected_answers + 1:
             print(f"[WARNING] Less answers ({len(question_blocks)-1}) than expected ({num_expected_answers}). "
-                  f"Inferring question [Q: {question_blocks[0]}]")
+                  f'Inferring question [Q: "{q_summary(question_blocks[0])}"]')
 
     # Choose questions and answers
     if policy == "single-line-question":  # Rule: Single-line question and answers variable
