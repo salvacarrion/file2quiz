@@ -19,7 +19,7 @@ class TestQuizify(unittest.TestCase):
 
         # Parse raw files
         print("Extracting text...")
-        texts_extracted = file2quiz.extract_text(input_dir, output_dir, extensions=extensions)
+        texts_extracted = file2quiz.extract_text(input_dir, output_dir, extensions=extensions, save_files=True)
 
         # Parse texts into quizzes
         print("Parsing quizzes...")

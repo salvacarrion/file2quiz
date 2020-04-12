@@ -7,8 +7,17 @@ from file2quiz import reader
 from file2quiz import utils
 
 # Define regex (Do do not allow break lines until the first letter of the q/a is found
-RGX_QUESTION = re.compile(r'^(\d+)([^\w\n]+)(?=\s+\d+|\s*[a-zA-Z])', re.MULTILINE)
-RGX_ANSWER = re.compile(r'^([a-zA-Z]{1})([^\w\n]+)(?=\s+\d+|\s*[a-zA-Z])', re.MULTILINE)
+# RGX_SPLITTER = r"[\p{posix_punct}\s]+"
+# RGX_STOP = r"?=\s+\d+|\s*[a-zA-Z]"
+# RGX_QUESTION = regex.compile(rf'^(\d+)({RGX_SPLITTER})({RGX_STOP})', regex.MULTILINE)
+# RGX_ANSWER = regex.compile(rf'^([a-zA-Z]{1})({RGX_SPLITTER})(?={RGX_STOP})', regex.MULTILINE)
+#
+# RGX_QUESTION = regex.compile(r"^(\d+)([\p{posix_punct}\s]+)(?=\s+\d+|\s*[a-zA-Z])", regex.MULTILINE)
+# RGX_ANSWER = regex.compile(r"^([a-zA-Z]{1})([\p{posix_punct}\s]+)(?=\s+\d+|\s*[a-zA-Z])", regex.MULTILINE)
+
+
+RGX_QUESTION = regex.compile(r"^(\d+)(\p{posix_punct}|\s)*(\p{posix_punct}|\t)+(?=[\t ]+[\d]+|[\t ]*[¡¿]+|[\t ]*[\p{Latin}]+)", regex.MULTILINE)
+RGX_ANSWER = regex.compile(r"^([a-zA-Z]{1})(\p{posix_punct}|\s)*(\p{posix_punct}|\t| )+(?=[\t ]+[\d]+|[\t ]*[¡¿]+|[\t ]*[\p{Latin}]+)", regex.MULTILINE)
 
 
 def preprocess_text(text, blacklist, mode):
@@ -46,10 +55,10 @@ def preprocess_text(text, blacklist, mode):
 def normalize_question(text, remove_id=True):
     # Remove identifiers
     if remove_id:
-        text = re.sub(RGX_QUESTION, "", text)
+        text = regex.sub(RGX_QUESTION, "", text)
 
     # Remove space before quotation mark or colons
-    text = re.sub(r"([\s,;:\-\.\?]*)([\?:])(\s*)$", r"\2", text)
+    text = regex.sub(r"([\s,;:\-\.\?]*)([\?:])(\s*)$", r"\2", text)
 
     # Remove whitespaces
     text = utils.remove_whitespace(text)
@@ -62,10 +71,10 @@ def normalize_question(text, remove_id=True):
 def normalize_answers(text, remove_id=True):
     # Remove identifiers and clean text
     if remove_id:
-        text = re.sub(RGX_ANSWER, "", text)
+        text = regex.sub(RGX_ANSWER, "", text)
 
     # Remove final period
-    text = re.sub(r"([\s\.]*)$", "", text)
+    text = regex.sub(r"([\s\.]*)$", "", text)
 
     # Remove whitespaces
     text = utils.remove_whitespace(text)
@@ -117,12 +126,14 @@ def parse_quiz(input_dir, output_dir, blacklist=None, token_answer=None, num_ans
 
     # Parse exams
     quizzes = []
+    total_questions = 0
     for i, filename in enumerate(files, 1):
         # Read file
         txt_file = reader.read_txt(filename)
 
         # Parse txt quiz
         quiz = parse_quiz_txt(txt_file, blacklist, token_answer, num_answers, mode)
+        total_questions += len(quiz)
         quizzes.append((quiz, filename))
 
     # Save quizzes
@@ -131,6 +142,11 @@ def parse_quiz(input_dir, output_dir, blacklist=None, token_answer=None, num_ans
             fname, ext = utils.get_fname(filename)
             reader.save_json(quiz, os.path.join(quizzes_dir, f"{fname}.json"))
 
+    print("=========================================")
+    print("=========================================")
+    print(f"[INFO] Documents parsed: {len(quizzes)}")
+    print(f"[INFO] Questions found: {total_questions}")
+    print("=========================================")
     return quizzes
 
 
@@ -148,8 +164,8 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None,  num_answers=None, m
             print("[INFO] Your answer token contains regular expressions. Regex knowledge is required.")
 
         # Split section (first match)
-        rxg_splitter = re.compile(f"{token_answer}", re.IGNORECASE | re.MULTILINE)
-        text = re.sub(rxg_splitter, DELIMITER, text, count=1)
+        rxg_splitter = regex.compile(f"{token_answer}", regex.IGNORECASE | regex.MULTILINE)
+        text = regex.sub(rxg_splitter, DELIMITER, text, count=1)
         sections = text.split(DELIMITER)
 
         if len(sections) == 1:
@@ -191,14 +207,14 @@ def parse_questions_auto(txt, num_expected_answers):
     DELIMITER = "\n@\n@\n@\n"
 
     # Split block of questions
-    txt = re.sub(RGX_QUESTION, rf"{DELIMITER}\1\2", txt)
+    txt = regex.sub(RGX_QUESTION, rf"{DELIMITER}\1\2\3", txt)
     raw_questions = txt.split(DELIMITER)
     raw_questions = [q for q in raw_questions[1:] if q.strip()] if raw_questions else []  # We can split the first chunk
 
     # Parse questions
     for i, raw_question in enumerate(raw_questions, 1):
         # Split block of answers
-        raw_answers = re.sub(RGX_ANSWER, rf"{DELIMITER}\1\2", raw_question)
+        raw_answers = regex.sub(RGX_ANSWER, rf"{DELIMITER}\1\2\3", raw_question)
         raw_answers = raw_answers.split(DELIMITER)
 
         # Normalize question items
@@ -217,13 +233,13 @@ def parse_questions_single_line(txt, num_expected_answers):
     questions = []
 
     # Define regex (Do do not allow break lines until the first letter of the q/a is found
-    rgx_block = re.compile(r'([\n]{2,})', re.MULTILINE)
+    rgx_block = regex.compile(r'([\n]{2,})', regex.MULTILINE)
 
     # Define delimiters
     DELIMITER = "\n@\n@\n@\n"
 
     # Split block of questions
-    txt = re.sub(rgx_block, rf"{DELIMITER}", txt)
+    txt = regex.sub(rgx_block, rf"{DELIMITER}", txt)
     raw_questions = txt.split(DELIMITER)
     raw_questions = [q for q in raw_questions if q.strip()] if raw_questions else []  # We can split the first chunk
 
@@ -258,7 +274,7 @@ def parse_normalize_question(question_blocks, num_expected_answers, suggested_id
         answers = question_blocks[1:]
 
     # Get question ID
-    id_question = re.search(RGX_QUESTION, question)
+    id_question = regex.search(RGX_QUESTION, question)
     if id_question:
         id_question = id_question.group(1)
     else:
@@ -272,14 +288,14 @@ def parse_normalize_question(question_blocks, num_expected_answers, suggested_id
     # Check number of answers
     num_answers = len(answers)
     if num_answers < 2:
-        print(f'[WARNING] Less than two answers. Skipping question: [Q: "{question}"]')
+        print(f'[WARNING] Less than two answers. Skipping question: [Q: "{question_blocks[0]}"]')
         return None
     else:
         # Check against expected answers
         if num_expected_answers:
             if num_answers != num_expected_answers:
                 print(f'[WARNING] {num_answers} answers found / {num_expected_answers} expected. '
-                      f'Skipping question: [Q: "{question}"]')
+                      f'Skipping question: [Q: "{question_blocks[0]}"]')
                 return None
     return id_question, question, answers
 
@@ -288,8 +304,8 @@ def parse_solutions(txt, letter2num=True):
     answers = []
 
     # Define regex
-    rgx_solutions = re.compile(r'(\b[\d]+)[\W\s]*([a-zA-Z]{1})(?!\w)', re.MULTILINE)
-    solutions = re.findall(rgx_solutions, txt)
+    rgx_solutions = regex.compile(r'(\b[\d]+)[\W\s]*([a-zA-Z]{1})(?!\w)', regex.MULTILINE)
+    solutions = regex.findall(rgx_solutions, txt)
 
     for i, (id_question, id_answer) in enumerate(solutions):
         # Format IDs
