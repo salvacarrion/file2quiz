@@ -75,7 +75,7 @@ class TestQuizify(unittest.TestCase):
             a) Example answer #1 
             b) Example answer #2
             
-            3.1- Testing normalization   ???  
+            3- Testing normalization   ???  
             a) Example answer #1.
             b) Example answer #2 .
             c) Example answer #3    .. . . .
@@ -104,7 +104,7 @@ class TestQuizify(unittest.TestCase):
             ===
             
             1-A 2.b
-            3.1    // C
+            3    // C
             4 b 5A,(6b)
             """
 
@@ -117,14 +117,14 @@ class TestQuizify(unittest.TestCase):
         # Check question IDs
         self.assertTrue(quizzes.get("1").get('id') == "1")
         self.assertTrue(quizzes.get("2").get('id') == "2")
-        self.assertTrue(quizzes.get("3.1").get('id') == "3.1")
+        self.assertTrue(quizzes.get("3").get('id') == "3")
         self.assertTrue(quizzes.get("4").get('id') == "4")
         self.assertTrue(quizzes.get("5").get('id') == "5")
 
         # Check question answers
         self.assertEqual(len(quizzes.get("1").get('answers')), 3)
         self.assertEqual(len(quizzes.get("2").get('answers')), 2)
-        self.assertEqual(len(quizzes.get("3.1").get('answers')), 3)
+        self.assertEqual(len(quizzes.get("3").get('answers')), 3)
         self.assertEqual(len(quizzes.get("4").get('answers')), 3)
         self.assertEqual(len(quizzes.get("5").get('answers')), 3)
 
@@ -133,14 +133,14 @@ class TestQuizify(unittest.TestCase):
         self.assertTrue(quizzes.get("1").get('answers')[1] == "1.2")
         self.assertTrue(quizzes.get("1").get('answers')[2] == "-1.3 negative number")
 
-        self.assertTrue(quizzes.get("3.1").get('answers')[0] == "Example answer #1")
-        self.assertTrue(quizzes.get("3.1").get('answers')[1] == "Example answer #2")
-        self.assertTrue(quizzes.get("3.1").get('answers')[2] == "Example answer #3")
+        self.assertTrue(quizzes.get("3").get('answers')[0] == "Example answer #1")
+        self.assertTrue(quizzes.get("3").get('answers')[1] == "Example answer #2")
+        self.assertTrue(quizzes.get("3").get('answers')[2] == "Example answer #3")
 
         # Check correct answers
         self.assertEqual(quizzes.get("1").get('correct_answer'), 0)
         self.assertEqual(quizzes.get("2").get('correct_answer'), 1)
-        self.assertEqual(quizzes.get("3.1").get('correct_answer'), 2)
+        self.assertEqual(quizzes.get("3").get('correct_answer'), 2)
         self.assertEqual(quizzes.get("4").get('correct_answer'), 1)
         self.assertEqual(quizzes.get("5").get('correct_answer'), 0)
 
