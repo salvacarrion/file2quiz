@@ -55,10 +55,16 @@ def tokenize(filename):
                   for fragment in digits.split(filename)))
 
 
+def normalize_text(text):
+    # Only latin characters + numbers + punctuation + whitespaces. (this also includes emojis)
+    return regex.sub(r"[^\p{Latin}\p{posix_alnum}\p{posix_punct}\s]", '', text)
+
+
 def replace_words(text, blacklist, replace=""):
     if blacklist:
         blacklist_regex = "|".join(blacklist)
-        return re.sub(rf"{blacklist_regex}", replace, text)
+        blacklist_regex = re.compile(rf"{blacklist_regex}", re.IGNORECASE | re.MULTILINE)
+        return re.sub(blacklist_regex, replace, text)
     else:
         return text
 

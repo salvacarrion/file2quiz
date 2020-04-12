@@ -11,10 +11,17 @@ from bs4 import BeautifulSoup
 from tika import parser as tp
 
 
-def extract_text(input_dir, output_dir, use_ocr=False, lang="eng", dpi=300, psm=3, oem=3, save_files=False,
+def extract_text(input_dir, output_dir, blacklist=None, use_ocr=False, lang="eng", dpi=300, psm=3, oem=3, save_files=False,
                  extensions=None):
     # Get files
     files = utils.get_files(input_dir, extensions)
+
+    # Get blacklist
+    if os.path.isfile(blacklist):
+        blacklist = read_txt(blacklist)
+        blacklist = list(set([l.strip() for l in blacklist.split("\n") if l.strip()]))
+    else:
+        blacklist = []
 
     # Create output dir
     txt_dir = os.path.join(output_dir, "txt")
@@ -25,7 +32,13 @@ def extract_text(input_dir, output_dir, use_ocr=False, lang="eng", dpi=300, psm=
     for i, filename in enumerate(files, 1):
         # Read file
         txt_pages = read_file(filename, output_dir, use_ocr, lang, dpi, psm, oem)
-        extracted_texts.append(("\n".join(txt_pages), filename))
+        text = "\n".join(txt_pages)
+
+        # Remove blacklisted words
+        text = utils.replace_words(text, blacklist, replace="")
+
+        # Add extracted texts
+        extracted_texts.append((text, filename))
 
     # Save extracted texts
     if save_files:
@@ -115,14 +128,20 @@ def read_pdf_ocr(filename, output_dir, lang, dpi, psm, oem, img_format="tiff"):
 def read_pdf_text(filename):
     pages_txt = []
 
-    _buffer = StringIO()
+    # Read PDF file
     data = tp.from_file(filename, xmlContent=True)
-    xhtml_data = BeautifulSoup(data['content'], features="lxml")
-    for page, content in enumerate(xhtml_data.find_all('div', attrs={'class': 'page'})):
+    xhtml_data = BeautifulSoup(data['content'], features='lxml')
+    for i, content in enumerate(xhtml_data.find_all('div', attrs={'class': 'page'})):
+        # Parse PDF data using TIKA (xml/html)
+        # It's faster and safer to create a new buffer than truncating it
+        # https://stackoverflow.com/questions/4330812/how-do-i-clear-a-stringio-object
+        _buffer = StringIO()
         _buffer.write(str(content))
         parsed_content = tp.from_buffer(_buffer.getvalue())
-        _buffer.truncate()
-        pages_txt.append(parsed_content['content'].strip())
+
+        # Add pages
+        text = parsed_content['content'].strip()
+        pages_txt.append(text)
 
     return pages_txt
 

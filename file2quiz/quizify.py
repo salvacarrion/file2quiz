@@ -6,30 +6,16 @@ import string
 from file2quiz import reader
 from file2quiz import utils
 
+# Define regex (Do do not allow break lines until the first letter of the q/a is found
+RGX_QUESTION = re.compile(r'^(\d+)([^\w\n]+)(?=\s+\d+|\s*[a-zA-Z])', re.MULTILINE)
+RGX_ANSWER = re.compile(r'^([a-zA-Z]{1})([^\w\n]+)(?=\s+\d+|\s*[a-zA-Z])', re.MULTILINE)
+
 
 def preprocess_text(text, blacklist, mode):
-    # Remove blacklisted words
-    text = utils.replace_words(text, blacklist, replace="")
-    text = clean_text(text)
-
-    # Specific preprocessing
-    if mode == "auto":
-        lines = [l for l in text.split('\n') if l]
-        text = "\n".join(lines)
-    else:
-        pass
-
-    return text
-
-
-def clean_text(text, only_latin=False):
     # Remove unwanted characters
     text = text \
-        .replace("\n.", ".") \
-        .replace(" .", ".") \
-        .replace(" º", "º") \
-        .replace('“', '\"').replace('”', '\"')\
-        .replace('‘', '\'').replace('’', '\'')\
+        .replace('“', '\"').replace('”', '\"') \
+        .replace('‘', '\'').replace('’', '\'') \
         .replace("€)", 'c)') \
         .replace("©", 'c)') \
         .replace("``", '\"') \
@@ -37,13 +23,55 @@ def clean_text(text, only_latin=False):
         .replace("’", "\'") \
         .replace("\ufeff", '')
 
-    # Only latin characters
-    if only_latin:
-        text = regex.sub(r"\p{Latin}\p{posix_punct}]+", '', text)
+    # Only latin characters + numbers + punctuation + whitespaces. (this also includes emojis)
+    text = utils.normalize_text(text)
 
     # Strip whitespace line-by-line
     lines = [l.strip() for l in text.split('\n')]
     text = "\n".join(lines)
+
+    # Specific pre-processing
+    if mode == "auto":
+        # Remove empty lines
+        lines = [l for l in text.split('\n') if l.strip()]
+        text = "\n".join(lines)
+    else:
+        pass
+
+    # Remove blacklisted words
+    text = utils.replace_words(text, blacklist, replace="")
+    return text
+
+
+def normalize_question(text, remove_id=True):
+    # Remove identifiers
+    if remove_id:
+        text = re.sub(RGX_QUESTION, "", text)
+
+    # Remove space before quotation mark or colons
+    text = re.sub(r"([\s,;:\-\.\?]*)([\?:])(\s*)$", r"\2", text)
+
+    # Remove whitespaces
+    text = utils.remove_whitespace(text)
+
+    # First letter upper case
+    text = text[0].upper() + text[1:] if len(text) > 2 else text
+    return text
+
+
+def normalize_answers(text, remove_id=True):
+    # Remove identifiers and clean text
+    if remove_id:
+        text = re.sub(RGX_ANSWER, "", text)
+
+    # Remove final period
+    text = re.sub(r"([\s\.]*)$", "", text)
+
+    # Remove whitespaces
+    text = utils.remove_whitespace(text)
+
+    # First letter upper case
+    text = text[0].upper() + text[1:] if len(text) > 2 else text
     return text
 
 
@@ -120,7 +148,7 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None,  num_answers=None, m
             print("[INFO] Your answer token contains regular expressions. Regex knowledge is required.")
 
         # Split section (first match)
-        rxg_splitter = re.compile(f"{token_answer}", re.IGNORECASE|re.MULTILINE)
+        rxg_splitter = re.compile(f"{token_answer}", re.IGNORECASE | re.MULTILINE)
         text = re.sub(rxg_splitter, DELIMITER, text, count=1)
         sections = text.split(DELIMITER)
 
@@ -159,23 +187,18 @@ def parse_questions(txt, num_expected_answers=None, mode="auto"):
 def parse_questions_auto(txt, num_expected_answers):
     questions = []
 
-    # Define regex (Do do not allow break lines until the first letter of the q/a is found
-    rgx_question = re.compile(r'^(\d+)([^\w\n]+)(?=\w)', re.MULTILINE)
-    rgx_answer = re.compile(r'^([a-zA-Z]{1})([^\w\n]+)(?=\w)', re.MULTILINE)
-
     # Define delimiters
     DELIMITER = "\n@\n@\n@\n"
 
     # Split block of questions
-    txt = re.sub(rgx_question, rf"{DELIMITER}\1\2", txt)
+    txt = re.sub(RGX_QUESTION, rf"{DELIMITER}\1\2", txt)
     raw_questions = txt.split(DELIMITER)
     raw_questions = [q for q in raw_questions[1:] if q.strip()] if raw_questions else []  # We can split the first chunk
 
     # Parse questions
     for i, raw_question in enumerate(raw_questions, 1):
-
         # Split block of answers
-        raw_answers = re.sub(rgx_answer, rf"{DELIMITER}\1\2", raw_question)
+        raw_answers = re.sub(RGX_ANSWER, rf"{DELIMITER}\1\2", raw_question)
         raw_answers = raw_answers.split(DELIMITER)
 
         # Normalize question items
@@ -194,14 +217,13 @@ def parse_questions_single_line(txt, num_expected_answers):
     questions = []
 
     # Define regex (Do do not allow break lines until the first letter of the q/a is found
-    rgx_question = re.compile(r'([\n]{2,})', re.MULTILINE)
-    rgx_answer = re.compile(r'^([a-zA-Z]{1})([^\w\n]+)(?=\w)', re.MULTILINE)
+    rgx_block = re.compile(r'([\n]{2,})', re.MULTILINE)
 
     # Define delimiters
     DELIMITER = "\n@\n@\n@\n"
 
     # Split block of questions
-    txt = re.sub(rgx_question, rf"{DELIMITER}", txt)
+    txt = re.sub(rgx_block, rf"{DELIMITER}", txt)
     raw_questions = txt.split(DELIMITER)
     raw_questions = [q for q in raw_questions if q.strip()] if raw_questions else []  # We can split the first chunk
 
@@ -223,10 +245,7 @@ def parse_questions_single_line(txt, num_expected_answers):
     return questions
 
 
-def parse_normalize_question(question_blocks, num_expected_answers, suggested_id, remove_ids=True):
-    rgx_question_id = re.compile(r'^(\d+)([^\w\n]+)(?=[a-zA-Z])', re.MULTILINE)
-    rgx_answer_id = re.compile(r'^([a-zA-Z]{1})([^\w\n]+)(?=[a-zA-Z])', re.MULTILINE)
-
+def parse_normalize_question(question_blocks, num_expected_answers, suggested_id):
     # Remove whitespaces
     question_blocks = [utils.remove_whitespace(item) for item in question_blocks]
 
@@ -239,17 +258,16 @@ def parse_normalize_question(question_blocks, num_expected_answers, suggested_id
         answers = question_blocks[1:]
 
     # Get question ID
-    id_question = re.search(rgx_question_id, question)
+    id_question = re.search(RGX_QUESTION, question)
     if id_question:
         id_question = id_question.group(1)
     else:
         id_question = str(suggested_id)
     id_question = id_question.lower().strip()
 
-    # Remove identifiers and clean text
-    if remove_ids:
-        question = re.sub(rgx_question_id, "", question)
-        answers = [re.sub(rgx_answer_id, "", ans) for ans in answers]
+    # Normalize question and answers
+    question = normalize_question(question)
+    answers = [normalize_answers(ans) for ans in answers]
 
     # Check number of answers
     num_answers = len(answers)
