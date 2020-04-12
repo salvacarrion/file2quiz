@@ -6,20 +6,11 @@ import string
 from file2quiz import reader
 from file2quiz import utils
 
-# Define regex (Do do not allow break lines until the first letter of the q/a is found
-# RGX_SPLITTER = r"[\p{posix_punct}\s]+"
-# RGX_STOP = r"?=\s+\d+|\s*[a-zA-Z]"
-# RGX_QUESTION = regex.compile(rf'^(\d+)({RGX_SPLITTER})({RGX_STOP})', regex.MULTILINE)
-# RGX_ANSWER = regex.compile(rf'^([a-zA-Z]{1})({RGX_SPLITTER})(?={RGX_STOP})', regex.MULTILINE)
-#
-# RGX_QUESTION = regex.compile(r"^(\d+)([\p{posix_punct}\s]+)(?=\s+\d+|\s*[a-zA-Z])", regex.MULTILINE)
-# RGX_ANSWER = regex.compile(r"^([a-zA-Z]{1})([\p{posix_punct}\s]+)(?=\s+\d+|\s*[a-zA-Z])", regex.MULTILINE)
-
 # (num/letter) + (symbols+/space*)
 RGX_BASE = r"([\t ]*[\p{posix_punct}\t]+[\t ]*)"
-# Questions startswith [¡¿, letter] or [number with a whitespace,+,-]
-RGX_QUESTION = regex.compile(r"^(\d+)"       + RGX_BASE + "(?=[¡¿\t ]*[a-zA-Z]+|[-+\t ]+[\d]+)", regex.MULTILINE)
-# Questions startswith [¡¿, letter] or [number with a whitespace,+,-]
+# Questions startswith [¡¿, letter] or [number with a whitespace,+,-];  weird case "1.2.2" => (Not a question"
+RGX_QUESTION = regex.compile(r"^(\d+[\d\.]*?)"       + RGX_BASE + "(?=[¡¿\t ]*[a-zA-Z]+|[-+\t ]+[\d]+)", regex.MULTILINE)
+# Questions startswith [¡¿, letter] or [number with a whitespace,+,-]; weird case "a.2.2" => "a) 2.2"
 RGX_ANSWER = regex.compile(r"^([a-zA-Z]{1})" + RGX_BASE + "(?=[¡¿\t ]*[a-zA-Z]+|[-+\t ]?[\d]+)", regex.MULTILINE)
 
 
@@ -323,7 +314,7 @@ def parse_solutions(txt, letter2num=True):
     answers = []
 
     # Define regex
-    rgx_solutions = regex.compile(r'(\b[\d]+)[\W\s]*([a-zA-Z]{1})(?!\w)', regex.MULTILINE)
+    rgx_solutions = regex.compile(r'\b(\d+[\d\.]*?)[\W\s]*([a-zA-Z]{1})(?!\w)', regex.MULTILINE)
     solutions = regex.findall(rgx_solutions, txt)
 
     for i, (id_question, id_answer) in enumerate(solutions):
