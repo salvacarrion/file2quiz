@@ -105,7 +105,7 @@ def parse_quiz(input_dir, output_dir, blacklist=None, token_answer=None, num_ans
     files = utils.get_files(input_dir, extensions={'.txt'})
 
     # Get blacklist
-    if os.path.isfile(blacklist):
+    if blacklist and os.path.isfile(blacklist):
         blacklist = reader.read_txt(blacklist)
         blacklist = list(set([l.strip() for l in blacklist.split("\n") if l.strip()]))
     else:

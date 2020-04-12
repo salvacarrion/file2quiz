@@ -17,7 +17,7 @@ def extract_text(input_dir, output_dir, blacklist=None, use_ocr=False, lang="eng
     files = utils.get_files(input_dir, extensions)
 
     # Get blacklist
-    if os.path.isfile(blacklist):
+    if blacklist and os.path.isfile(blacklist):
         blacklist = read_txt(blacklist)
         blacklist = list(set([l.strip() for l in blacklist.split("\n") if l.strip()]))
     else:
