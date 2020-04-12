@@ -15,9 +15,12 @@ from file2quiz import utils
 # RGX_QUESTION = regex.compile(r"^(\d+)([\p{posix_punct}\s]+)(?=\s+\d+|\s*[a-zA-Z])", regex.MULTILINE)
 # RGX_ANSWER = regex.compile(r"^([a-zA-Z]{1})([\p{posix_punct}\s]+)(?=\s+\d+|\s*[a-zA-Z])", regex.MULTILINE)
 
-
-RGX_QUESTION = regex.compile(r"^(\d+)(\p{posix_punct}|\s)*(\p{posix_punct}|\t)+(?=[\t ]+[\d]+|[\t ]*[¡¿]+|[\t ]*[\p{Latin}]+)", regex.MULTILINE)
-RGX_ANSWER = regex.compile(r"^([a-zA-Z]{1})(\p{posix_punct}|\s)*(\p{posix_punct}|\t| )+(?=[\t ]+[\d]+|[\t ]*[¡¿]+|[\t ]*[\p{Latin}]+)", regex.MULTILINE)
+# (num/letter) + (symbols+/space*)
+RGX_BASE = r"([\t ]*[\p{posix_punct}\t]+[\t ]*)"
+# Questions startswith ¡¿, letter or a [number with a whitespace]
+RGX_QUESTION = regex.compile(r"^(\d+)"       + RGX_BASE + "(?=[¡¿\t ]*[a-zA-Z]+|[-+\t ]+[\d]+)", regex.MULTILINE)
+# answers startswith ¡¿, letter or a [number with a whitespace]
+RGX_ANSWER = regex.compile(r"^([a-zA-Z]{1})" + RGX_BASE + "(?=[¡¿\t ]*[a-zA-Z]+|[-+\t ]?[\d]+)", regex.MULTILINE)
 
 
 def preprocess_text(text, blacklist, mode):
@@ -207,14 +210,14 @@ def parse_questions_auto(txt, num_expected_answers):
     DELIMITER = "\n@\n@\n@\n"
 
     # Split block of questions
-    txt = regex.sub(RGX_QUESTION, rf"{DELIMITER}\1\2\3", txt)
+    txt = regex.sub(RGX_QUESTION, rf"{DELIMITER}\1\2", txt)
     raw_questions = txt.split(DELIMITER)
     raw_questions = [q for q in raw_questions[1:] if q.strip()] if raw_questions else []  # We can split the first chunk
 
     # Parse questions
     for i, raw_question in enumerate(raw_questions, 1):
         # Split block of answers
-        raw_answers = regex.sub(RGX_ANSWER, rf"{DELIMITER}\1\2\3", raw_question)
+        raw_answers = regex.sub(RGX_ANSWER, rf"{DELIMITER}\1\2", raw_question)
         raw_answers = raw_answers.split(DELIMITER)
 
         # Normalize question items
@@ -262,16 +265,38 @@ def parse_questions_single_line(txt, num_expected_answers):
 
 
 def parse_normalize_question(question_blocks, num_expected_answers, suggested_id):
-    # Remove whitespaces
-    question_blocks = [utils.remove_whitespace(item) for item in question_blocks]
+    # Remove empty lines
+    question_blocks = [item for item in question_blocks if item.strip()]
 
-    # Get questions and answers
+    # Check number of items
+    if len(question_blocks) < 2+1:
+        print(f'[INFO] Block with less than two answers. Skipping block: [Q: "{question_blocks[0]}"]')
+        return None
+
+    # Set policy depending on the questions and answers
+    policy = "single-line-question"
     if num_expected_answers:
-        question = " ".join(question_blocks[:-num_expected_answers])  # We allow the question to be "break" the rules
-        answers = question_blocks[-num_expected_answers:]  # Select answers first
-    else:
-        question = question_blocks[0]  # First item is the answer
+        # Too many answers
+        if len(question_blocks) > num_expected_answers + 1:
+            print(f"[WARNING] More answers ({len(question_blocks)-1}) than expected ({num_expected_answers}). "
+                  f"Inferring question [Q: {question_blocks[0]}]")
+            policy = "multiline-question"
+
+        # Too few answers
+        elif len(question_blocks) < num_expected_answers + 1:
+            print(f"[WARNING] Less answers ({len(question_blocks)-1}) than expected ({num_expected_answers}). "
+                  f"Inferring question [Q: {question_blocks[0]}]")
+
+    # Choose questions and answers
+    if policy == "single-line-question":  # Rule: Single-line question and answers variable
+        question = question_blocks[0]
         answers = question_blocks[1:]
+
+    elif policy == "multiline-question":  # Rule: Multi-line question and answers fixed
+        question = " ".join(question_blocks[:-num_expected_answers])
+        answers = question_blocks[-num_expected_answers:]
+    else:
+        raise NameError("Unknown policy")
 
     # Get question ID
     id_question = regex.search(RGX_QUESTION, question)
@@ -285,18 +310,6 @@ def parse_normalize_question(question_blocks, num_expected_answers, suggested_id
     question = normalize_question(question)
     answers = [normalize_answers(ans) for ans in answers]
 
-    # Check number of answers
-    num_answers = len(answers)
-    if num_answers < 2:
-        print(f'[WARNING] Less than two answers. Skipping question: [Q: "{question_blocks[0]}"]')
-        return None
-    else:
-        # Check against expected answers
-        if num_expected_answers:
-            if num_answers != num_expected_answers:
-                print(f'[WARNING] {num_answers} answers found / {num_expected_answers} expected. '
-                      f'Skipping question: [Q: "{question_blocks[0]}"]')
-                return None
     return id_question, question, answers
 
 

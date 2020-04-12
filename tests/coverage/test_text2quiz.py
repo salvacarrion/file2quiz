@@ -60,6 +60,90 @@ class TestQuizify(unittest.TestCase):
             self.assertEqual(quiz.get("2").get('correct_answer'), 1)
             self.assertEqual(quiz.get("3").get('correct_answer'), 3)
 
+    def test_splitter(self):
+        txt = """
+            text to ignore
+            text to ignore
+            text to ignore
+            
+            1---- -2 degrees is the...
+            a\t1
+            b.1.2
+            c)) -1.3 negative number
+             
+            2. Missing one answers: 
+            a) Example answer #1 
+            b) Example answer #2
+            
+            3- Testing normalization   ???  
+            a) Example answer #1.
+            b) Example answer #2 .
+            c) Example answer #3    .. . . .
+            
+            4\tTesting broken question from
+            1923?\t   
+            a\tExample answer #1
+            b\tExample answer #2
+            c\tExample answer #3
+            
+            5 ))) 5 is a number, and
+            question 
+            is
+            
+            also broken  :   
+            a) Example answer #1
+            b) Example answer #2
+            c) Example answer #3
+            
+            6 ))) This question is
+            6.1 and is quite hard :   
+            a) Example answer #1
+            b) Example answer #2
+            c) Example answer #3
+            
+            ===
+            
+            1-A 2.b
+            3    // C
+            4 b 5A,(6b)
+            """
+
+        # Parse quiz
+        quiz = file2quiz.parse_quiz_txt(txt, token_answer="===", num_answers=3)
+
+        # General checks
+        self.assertEqual(len(quiz), 6)  # Num. questions
+
+        # Check question IDs
+        self.assertTrue(quiz.get("1").get('id') == "1")
+        self.assertTrue(quiz.get("2").get('id') == "2")
+        self.assertTrue(quiz.get("3").get('id') == "3")
+        self.assertTrue(quiz.get("4").get('id') == "4")
+        self.assertTrue(quiz.get("5").get('id') == "5")
+
+        # Check question answers
+        self.assertEqual(len(quiz.get("1").get('answers')), 3)
+        self.assertEqual(len(quiz.get("2").get('answers')), 2)
+        self.assertEqual(len(quiz.get("3").get('answers')), 3)
+        self.assertEqual(len(quiz.get("4").get('answers')), 3)
+        self.assertEqual(len(quiz.get("5").get('answers')), 3)
+
+        # Check question lengths (characters)
+        self.assertTrue(quiz.get("1").get('answers')[0] == "1")
+        self.assertTrue(quiz.get("1").get('answers')[1] == "1.2")
+        self.assertTrue(quiz.get("1").get('answers')[2] == "-1.3 negative number")
+
+        self.assertTrue(quiz.get("3").get('answers')[0] == "Example answer #1")
+        self.assertTrue(quiz.get("3").get('answers')[1] == "Example answer #2")
+        self.assertTrue(quiz.get("3").get('answers')[2] == "Example answer #3")
+
+        # Check correct answers
+        self.assertEqual(quiz.get("1").get('correct_answer'), 0)
+        self.assertEqual(quiz.get("2").get('correct_answer'), 1)
+        self.assertEqual(quiz.get("3").get('correct_answer'), 2)
+        self.assertEqual(quiz.get("4").get('correct_answer'), 1)
+        self.assertEqual(quiz.get("5").get('correct_answer'), 0)
+
 
 if __name__ == '__main__':
     unittest.main()
