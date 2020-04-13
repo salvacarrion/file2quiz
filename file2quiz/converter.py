@@ -132,3 +132,52 @@ def json2text(path, show_correct):
 
         texts.append((fname, quiz_txt))
     return texts
+
+
+def _pdf2word(filename, savepath, word_client=None):
+    import win32com.client
+    import pywintypes
+
+    if not word_client:
+        # Load word client
+        word_client = win32com.client.Dispatch("Word.Application")
+        word_client.visible = 0
+
+    try:
+        # Open word file
+        wb = word_client.Documents.Open(filename)
+
+        # File format for .docx
+        # https://docs.microsoft.com/en-us/office/vba/api/word.wdsaveformat
+        wb.SaveAs2(savepath, FileFormat=16)
+        wb.Close()
+    except pywintypes.com_error as e:
+        print(f"[ERROR] There was an error converting the PDF file to DOCX. Skipping file. ({e})")
+
+
+def pdf2word(input_dir, output_dir):
+    import win32com.client
+
+    # Get files
+    files = utils.get_files(input_dir, extensions={".pdf"})
+
+    # Create output dir
+    output_dir = os.path.join(output_dir, "docx-word")
+    utils.create_folder(output_dir)
+
+    # Load word client
+    word_client = win32com.client.Dispatch("Word.Application")
+    word_client.visible = 0
+
+    # Walk through files
+    for i, filename in enumerate(files, 1):
+        # Parse path
+        tail, basedir = utils.get_tail(filename)
+        fname, ext = utils.get_fname(filename)
+        print(f"#{i}. Converting *.pdf to *.docx ({tail})")
+
+        # Create save path
+        savepath = os.path.abspath(os.path.join(output_dir, f"{fname}.docx"))
+
+        # Convert pdf
+        _pdf2word(filename, savepath, word_client)
