@@ -17,7 +17,7 @@ def get_fname(filename):
     return fname, ext
 
 
-def get_files(path, extensions=None):
+def get_files(path, extensions=None, sort=True):
     # if extensions is None:
     #     extensions = {".txt", ".pdf", ".jpg", ".jpeg", ".html"}
 
@@ -32,6 +32,10 @@ def get_files(path, extensions=None):
             # Check if the extension is valid
             if extensions is None or ext in extensions:
                 valid_files.append(os.path.join(path, filename))
+
+    # Sort files using natural order
+    if sort:
+        valid_files = sorted(valid_files, key=tokenize)
     return valid_files
 
 

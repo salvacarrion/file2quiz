@@ -102,6 +102,22 @@ def save_json(quiz, filename):
         json.dump(quiz, f)
 
 
+def read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=None, empty_folder=True):
+    basedir, tail = os.path.split(filename)
+
+    # Save path
+    savepath = f"{output_dir}/ocr"
+    savepath += f"/{parent_dir}" if parent_dir else ""
+    utils.create_folder(savepath, empty_folder=empty_folder)  # Do not empty if it is part of a batch
+
+    # Perform OCR
+    converter.image2text(filename, f"{savepath}/{tail}.txt", lang, dpi, psm, oem)
+
+    # Read file
+    text = read_txt(filename=f"{savepath}/{tail}.txt")
+    return [text]
+
+
 def read_pdf(filename, output_dir, use_ocr, lang, dpi, psm, oem):
     if use_ocr:
         return read_pdf_ocr(filename, output_dir, lang, dpi, psm, oem)
@@ -153,23 +169,7 @@ def read_pdf_text(filename):
     return pages_txt
 
 
-def read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=None, empty_folder=True):
-    basedir, tail = os.path.split(filename)
-
-    # Save path
-    savepath = f"{output_dir}/ocr"
-    savepath += f"/{parent_dir}" if parent_dir else ""
-    utils.create_folder(savepath, empty_folder=empty_folder)  # Do not empty if it is part of a batch
-
-    # Perform OCR
-    converter.image2text(filename, f"{savepath}/{tail}.txt", lang, dpi, psm, oem)
-
-    # Read file
-    text = read_txt(filename=f"{savepath}/{tail}.txt")
-    return [text]
-
-
-def _read_tika(filename):
+def _read_tika(filename, *args, **kargs):
     parsed = tp.from_file(filename)
     text = parsed["content"].strip()
     return [text]

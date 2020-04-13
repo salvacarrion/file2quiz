@@ -7,11 +7,15 @@ from file2quiz import reader
 from file2quiz import utils
 
 # (num/letter) + (symbols+/space*)
+#RGX_BASE = r"([\.\)\-\]\t ]+)"
 RGX_BASE = r"([\t ]*[\p{posix_punct}\t]+[\t ]*)"
+
 # Questions startswith [¡¿, letter] or [number with a whitespace,+,-];  weird case "1.2.2" => (Not a question"
+# Answers startswith [¡¿, letter] or [number with a whitespace,+,-]; weird case "a.2.2" => "a) 2.2"
 RGX_QUESTION = regex.compile(r"^(\d+[\d\.]*?)"       + RGX_BASE + "(?=[¡¿\t ]*[\p{Latin}]+|[-+\t ]+[\d]+)", regex.MULTILINE)
-# Questions startswith [¡¿, letter] or [number with a whitespace,+,-]; weird case "a.2.2" => "a) 2.2"
 RGX_ANSWER = regex.compile(r"^([\d\.]*[a-zA-Z]{1})" + RGX_BASE + "(?=[¡¿\t ]*[\p{Latin}]+|[-+\t ]?[\d]+)", regex.MULTILINE)
+
+# (debug) ascii: (\d+[\d\.]*?)([\.\)\-\t ]+[\t ]*)(?=[¡¿\t ]*[a-zA-Z]+|[-+\t ]+[\d]+)
 
 
 def preprocess_text(text, blacklist, mode):
@@ -143,7 +147,7 @@ def parse_quiz(input_dir, output_dir, blacklist_path=None, token_answer=None, nu
         # Show info
         if len(quiz) == 0:
             print(f"\t- [WARNING] No quizzes were found ({tail})")
-        print(f"\t- [INFO] Parsing done! ({tail})")
+        print(f"\t- [INFO] Parsing done! {len(quiz)} questions were found. ({tail})")
 
     # Save quizzes
     if save_files:
