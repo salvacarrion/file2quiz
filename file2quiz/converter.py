@@ -166,8 +166,8 @@ def pdf2word(input_dir, output_dir):
     utils.create_folder(output_dir)
 
     # Load word client
-    word = win32com.client.Dispatch("Word.Application")
-    word.visible = 0
+    word_client = win32com.client.Dispatch("Word.Application")
+    word_client.visible = 0
 
     # Walk through files
     for i, filename in enumerate(files, 1):
