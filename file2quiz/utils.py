@@ -27,8 +27,8 @@ def get_files(path, extensions=None):
     for filename in files:
         fname, ext = get_fname(filename)
 
-        # Skip hidden files
-        if not fname.startswith("."):
+        # Skip hidden files (Unix, Windows)
+        if not (fname.startswith(".") or fname.startswith("~$")):
             # Check if the extension is valid
             if extensions is None or ext in extensions:
                 valid_files.append(os.path.join(path, filename))
