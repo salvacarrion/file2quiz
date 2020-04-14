@@ -328,7 +328,7 @@ def parse_normalize_question(question_blocks, num_expected_answers, suggested_id
             missing_ans_txt = kwargs.get("fill_missing_answers")
             if missing_ans_txt:
                 num_missing_ans = (num_expected_answers + 1) - len(question_blocks)
-                extra_answers = [f'"z) {missing_ans_txt}' for _ in range(num_missing_ans)]
+                extra_answers = [f'z) {missing_ans_txt}' for _ in range(num_missing_ans)]
 
             print(f"\t- [WARNING] Less answers ({len(question_blocks)-1}) than expected ({num_expected_answers}). "
                   f'Filling {len(extra_answers)} missing answers. [Q: "{q_summary(question_blocks[0])}"]')
