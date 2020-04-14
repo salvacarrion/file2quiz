@@ -13,6 +13,10 @@ from tika import parser as tp
 
 def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang="eng", dpi=300, psm=3, oem=3, save_files=False,
                  extensions=None):
+    print(f'##############################################################')
+    print(f'### TEXT EXTRACTION')
+    print(f'##############################################################\n')
+
     # Get files
     files = utils.get_files(input_dir, extensions)
 
@@ -29,7 +33,7 @@ def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang
         tail, basedir = utils.get_tail(filename)
         print("")
         print(f'==============================================================')
-        print(f'[INFO] Extracting text from: "{tail}"')
+        print(f'[INFO] ({i}/{len(files)}) Extracting text from: "{tail}"')
         print(f'==============================================================')
 
         # Read file
@@ -47,12 +51,17 @@ def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang
             print(f"\t- [WARNING] No text was found ({tail})")
         print(f"\t- [INFO] Extracting done! ({tail})")
 
-    # Save extracted texts
-    if save_files:
-        for i, (text, filename) in enumerate(extracted_texts):
-            basedir, tail = os.path.split(filename)
+        # Save extracted texts
+        if save_files:
+            print(f"\t- [INFO] Saving file... ({tail}.txt)")
             save_txt(text, os.path.join(txt_dir, f"{tail}.txt"))
 
+    print("")
+    print("--------------------------------------------------------------")
+    print("SUMMARY")
+    print("--------------------------------------------------------------")
+    print(f"- [INFO] Documents analyzed: {len(extracted_texts)}")
+    print("--------------------------------------------------------------\n\n")
     return extracted_texts
 
 
@@ -130,9 +139,9 @@ def read_pdf_ocr(filename, output_dir, lang, dpi, psm, oem, img_format="tiff"):
     basedir, tail = os.path.split(filename)
 
     # Scan pages
-    print("\t- [INFO] Converting PDF to images...")
     savepath = f"{output_dir}/scanned/{tail}"
     utils.create_folder(savepath)
+    print("\t- [INFO] Converting PDF to images...")
     converter.pdf2image(filename, savepath, dpi, img_format=img_format)
 
     # Get files to OCR, and sort them alphabetically (tricky => [page-0, page-1, page-10, page-2,...])
@@ -163,7 +172,8 @@ def read_pdf_text(filename):
         parsed_content = tp.from_buffer(_buffer.getvalue())
 
         # Add pages
-        text = parsed_content['content'].strip()
+        tmp = parsed_content.get("content", None)  # Sometimes content exists but is None
+        text = tmp.strip() if tmp else ""
         pages_txt.append(text)
 
     return pages_txt

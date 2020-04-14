@@ -43,16 +43,15 @@ def create_folder(path, empty_folder=True):
     basedir = os.path.basename(path)
 
     # Check output path
-    if os.path.exists(path):
-        if empty_folder:
-            print("\t- [INFO] Deleting '{}' folder contents...".format(basedir))
-            shutil.rmtree(path)
-    else:
-        print("\t- [INFO] Creating directories: {}".format(path))
+    if os.path.exists(path) and empty_folder:
+        print("\t- [INFO] Deleting '{}' folder contents...".format(basedir))
+        shutil.rmtree(path)  # Delete contents recursively
 
-    # Create path, recursively
-    path = pathlib.Path(path)
-    path.mkdir(parents=True, exist_ok=True)
+    # Check if we have to create the directory (again)
+    if not os.path.exists(path):
+        print("\t- [INFO] Creating directories: {}".format(path))
+        path = pathlib.Path(path)  # Create path, recursively
+        path.mkdir(parents=True, exist_ok=True)
 
 
 def tokenize(filename):

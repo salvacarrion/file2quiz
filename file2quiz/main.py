@@ -18,12 +18,13 @@ def main():
     parser.add_argument('--blacklist', help="Blacklist file with the excluded words or patterns (regex)", default=None)
     parser.add_argument('--token-answer', help="(regex) Token used to split the file between questions and answers", default=None)
     parser.add_argument('--show-answers', help="Show correct answer", default=False, action="store_true")
+    parser.add_argument('--fill-missing-answers', help="Texto used to fill missing answers", default=None)
     parser.add_argument('--num-answers', help="Number of answers per question", default=None, type=int)
     parser.add_argument('--save-txt', help="Save quizzes in txt", default=False, action="store_true")
 
     # Tesseract
-    parser.add_argument('--use-ocr', help="Use an OCR to extract text from the PDFs", default=False, type=bool)
-    parser.add_argument('--lang', help="[Tesseract] Specify language(s) used for OCR", default="eng")
+    parser.add_argument('--use-ocr', help="Use an OCR to extract text from the PDFs", default=True, type=bool)
+    parser.add_argument('--lang', help="[Tesseract] Specify language(s) used for OCR", default="spa")
     parser.add_argument('--dpi', help="[Tesseract] Specify DPI for input image", default=300, type=int)
     parser.add_argument('--psm', help="[Tesseract] Specify page segmentation mode", default=3, type=int)
     parser.add_argument('--oem', help="[Tesseract] Specify OCR Engine mode", default=3, type=int)
@@ -58,7 +59,8 @@ def main():
         # Parse quizzes
         input_dir = os.path.join(output_dir, "txt")
         file2quiz.parse_quiz(input_dir, output_dir, blacklist_path, args.token_answer, args.num_answers,
-                             args.mode, save_files=True)
+                             mode=args.mode, save_files=True,
+                             fill_missing_answers=args.fill_missing_answers)
 
         # Convert to txt
         if args.save_txt:

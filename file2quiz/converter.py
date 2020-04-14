@@ -6,6 +6,10 @@ from file2quiz import utils, reader
 
 
 def convert_quiz(input_dir, output_dir, file_format, save_files=False, show_answers=True):
+    print(f'##############################################################')
+    print(f'### QUIZ CONVERTER')
+    print(f'##############################################################\n')
+
     # Get files
     files = utils.get_files(input_dir, extensions={'.json'})
 
@@ -24,41 +28,55 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False, show_answ
         print(f'\t- [ERROR] No method to save "{output_ext}" files (fallback to "txt")')
 
     # Convert quizzes
-    quizzes = []
+    fquizzes = []
+    total_questions = 0
     for i, filename in enumerate(files, 1):
         tail, basedir = utils.get_tail(filename)
+        fname, ext = utils.get_fname(filename)
+
+        print("")
+        print(f'==============================================================')
+        print(f'[INFO] ({i}/{len(files)}) Converting quiz to "{file_format}": "{tail}"')
+        print(f'==============================================================')
 
         # Read file
         quiz = reader.read_json(filename)
+        total_questions += len(quiz)
 
         try:
-            quiz = convert_quiz_json(quiz, file_format, show_answers)
+            fquiz = _convert_quiz(quiz, file_format, show_answers)
         except ValueError as e:
             print(f'\t- [ERROR] {e}. Skipping quiz "{tail}"')
             continue
 
-        # Build quiz
-        quizzes.append((quiz, filename))
+        # Add formatted quizzes
+        fquizzes.append((fquiz, filename))
 
         # Show info
-        if len(quiz) == 0:
+        if len(fquiz.strip()) == 0:
             print(f"\t- [WARNING] No quiz were found ({tail})")
         print(f"\t- [INFO] Converting to '{file_format}' done! ({tail})")
 
-    # Save quizzes
-    if save_files:
-        for i, (quiz, filename) in enumerate(quizzes):
-            fname, ext = utils.get_fname(filename)
-            reader.save_txt(quiz, os.path.join(convert_dir, f"{fname}.{output_ext}"))
+        # Save quizzes
+        if save_files:
+            print(f"\t- [INFO] Saving file... ({tail}.txt)")
+            reader.save_txt(fquiz, os.path.join(convert_dir, f"{fname}.{output_ext}"))
 
     # Check result
-    if not quizzes:
+    if not fquizzes:
         print("\t- [WARNING] No quiz was converted successfully")
 
-    return quizzes
+    print("")
+    print("--------------------------------------------------------------")
+    print("SUMMARY")
+    print("--------------------------------------------------------------")
+    print(f"- [INFO] Quizzes converted: {len(fquizzes)}")
+    print(f"- [INFO] Questions found: {total_questions}")
+    print("--------------------------------------------------------------\n\n")
+    return fquizzes
 
 
-def convert_quiz_json(quiz, file_format, show_answers=True):
+def _convert_quiz(quiz, file_format, show_answers=True):
     # Select format
     if file_format == "anki":
         return quiz2anki(quiz)
@@ -152,7 +170,7 @@ def _pdf2word(filename, savepath, word_client=None):
         wb.SaveAs2(savepath, FileFormat=16)
         wb.Close()
     except pywintypes.com_error as e:
-        print(f"[ERROR] There was an error converting the PDF file to DOCX. Skipping file. ({e})")
+        print(f"- [ERROR] There was an error converting the PDF file to DOCX. Skipping file. ({e})")
 
 
 def pdf2word(input_dir, output_dir):
