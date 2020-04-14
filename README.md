@@ -208,9 +208,10 @@ usage: file2quiz [-h]
                  [--action {file2quiz,file2text,text2quiz,quiz2text,quiz2anki}]
                  [--input INPUT] [--output OUTPUT] [--mode {auto,single-line}]
                  [--blacklist BLACKLIST] [--token-answer TOKEN_ANSWER]
-                 [--show-answers] [--num-answers NUM_ANSWERS] [--save-txt]
-                 [--use-ocr USE_OCR] [--lang LANG] [--dpi DPI] [--psm PSM]
-                 [--oem OEM]
+                 [--show-answers]
+                 [--fill-missing-answers FILL_MISSING_ANSWERS]
+                 [--num-answers NUM_ANSWERS] [--save-txt] [--use-ocr USE_OCR]
+                 [--lang LANG] [--dpi DPI] [--psm PSM] [--oem OEM]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -227,6 +228,8 @@ optional arguments:
                         (regex) Token used to split the file between questions
                         and answers
   --show-answers        Show correct answer
+  --fill-missing-answers FILL_MISSING_ANSWERS
+                        Texto used to fill missing answers
   --num-answers NUM_ANSWERS
                         Number of answers per question
   --save-txt            Save quizzes in txt

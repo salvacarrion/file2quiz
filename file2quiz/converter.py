@@ -153,9 +153,13 @@ def json2text(path, show_correct):
 
 
 def _pdf2word(filename, savepath, word_client=None):
-    import win32com.client
-    import pywintypes
+    try:
+        import win32com.client
+        import pywintypes
+    except ImportError as e:
+        raise ImportError("'pywin32' missing. You need to install it manually (only Windows): pip install pywin32")
 
+    # Create a Word client if there isn't any
     if not word_client:
         # Load word client
         word_client = win32com.client.Dispatch("Word.Application")
@@ -174,7 +178,10 @@ def _pdf2word(filename, savepath, word_client=None):
 
 
 def pdf2word(input_dir, output_dir):
-    import win32com.client
+    try:
+        import win32com.client
+    except ImportError as e:
+        raise ImportError("'pywin32' missing. You need to install it manually (only Windows): pip install pywin32")
 
     # Get files
     files = utils.get_files(input_dir, extensions={".pdf"})
