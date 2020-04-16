@@ -1,6 +1,7 @@
 # Development
 examples/*
 !examples/raw/
+aux_func/
 
 # Mac OS
 .DS_Store

@@ -19,6 +19,7 @@ def main():
     parser.add_argument('--token-answer', help="(regex) Token used to split the file between questions and answers", default=None)
     parser.add_argument('--show-answers', help="Show correct answer", default=False, action="store_true")
     parser.add_argument('--fill-missing-answers', help="Texto used to fill missing answers", default=None)
+    parser.add_argument('--extract-bold', help="Extract bold text from the documents", default=False, action="store_true")
     parser.add_argument('--num-answers', help="Number of answers per question", default=None, type=int)
     parser.add_argument('--save-txt', help="Save quizzes in txt", default=False, action="store_true")
 
@@ -41,6 +42,7 @@ def main():
 
         # Extract text
         file2quiz.extract_text(input_dir, output_dir, blacklist_path, args.use_ocr, args.lang, args.dpi, args.psm, args.oem,
+                               xml_selector=args.extract_bold,
                                save_files=True)
         print("Done!")
 
@@ -53,8 +55,9 @@ def main():
 
         # Parse raw files
         if args.action == "file2quiz":
-            file2quiz.extract_text(input_dir, output_dir, blacklist_path, args.use_ocr, args.lang, args.dpi, args.psm, args.oem,
-                                   save_files=True)
+            file2quiz.extract_text(input_dir, output_dir, blacklist_path,
+                                   args.use_ocr, args.lang, args.dpi, args.psm, args.oem,
+                                   xml_selector=args.xml_selector, save_files=True)
 
         # Parse quizzes
         input_dir = os.path.join(output_dir, "txt")
@@ -66,8 +69,8 @@ def main():
         if args.save_txt:
             input_dir = os.path.join(output_dir, "quizzes/json")
             output_dir = os.path.abspath(os.path.join(output_dir, "quizzes"))
-            file2quiz.convert_quiz(input_dir, output_dir, file_format="text", save_files=True,
-                                   show_answers=args.show_answers)
+            file2quiz.convert_quiz(input_dir, output_dir,
+                                   file_format="text", save_files=True, show_answers=args.show_answers)
 
         print("Done!")
 

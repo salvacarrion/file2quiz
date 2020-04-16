@@ -27,7 +27,7 @@ class TestQuizify(unittest.TestCase):
         print("Parsing quizzes...")
         quizzes = []
         blacklist = file2quiz.reader.read_blacklist(blacklist_path)
-        for text, filename in texts_extracted:
+        for text, text_selected, filename in texts_extracted:
             quiz = file2quiz.parse_quiz_txt(text, blacklist, token_answer=token_answer)
             quizzes.append((quiz, filename))
 
@@ -69,6 +69,7 @@ class TestQuizify(unittest.TestCase):
             text to ignore
             text to ignore
             
+
             1---- -2 degrees is the...
             a\t1
             b.1.2
@@ -79,9 +80,9 @@ class TestQuizify(unittest.TestCase):
             b) Example answer #2
             
             3- Testing normalization   ???  
-            a) Example answer #1.
-            b) Example answer #2 .
-            c) Example answer #3    .. . . .
+            a) the T    ª is   -    10 º        C  .
+            b) has <  10      mm2 and >=    -  10.0    Kg.
+            c) the discount is + 12   %   
             
             4\tTesting broken question from
             1923?\t   
@@ -104,18 +105,28 @@ class TestQuizify(unittest.TestCase):
             6b) Example answer #2
             c) Example answer #3
             
+            7. El procedimiento extraordinario de los 
+            10.0b, estatutos del CPBV, solo podrá ser referente 
+            a: 
+            a) Disolución del 
+            CPBV 
+            b) Modificación del objeto o fines del Consorcio 
+            c) Modificación del régimen financiero 
+            d) Todas son correctas
+
             ===
             
             1-A 2.b
             3    // C
             4 b 5A,(6.1b)
+            7.c
             """
 
         # Parse quiz
-        quizzes = file2quiz.parse_quiz_txt(txt, token_answer="===", num_answers=3)
+        quizzes = file2quiz.parse_quiz_txt(txt, token_answer="===")
 
         # General checks
-        self.assertEqual(len(quizzes), 6)  # Num. questions
+        self.assertEqual(len(quizzes), 7)  # Num. questions
 
         # Check question IDs
         self.assertTrue(quizzes.get("1").get('id') == "1")
@@ -124,6 +135,7 @@ class TestQuizify(unittest.TestCase):
         self.assertTrue(quizzes.get("4").get('id') == "4")
         self.assertTrue(quizzes.get("5").get('id') == "5")
         self.assertTrue(quizzes.get("6.1").get('id') == "6.1")
+        self.assertTrue(quizzes.get("7").get('id') == "7")
 
         # Check question answers
         self.assertEqual(len(quizzes.get("1").get('answers')), 3)
@@ -132,15 +144,19 @@ class TestQuizify(unittest.TestCase):
         self.assertEqual(len(quizzes.get("4").get('answers')), 3)
         self.assertEqual(len(quizzes.get("5").get('answers')), 3)
         self.assertEqual(len(quizzes.get("6.1").get('answers')), 3)
+        self.assertEqual(len(quizzes.get("7").get('answers')), 4)
 
         # Check question lengths (characters)
         self.assertTrue(quizzes.get("1").get('answers')[0] == "1")
         self.assertTrue(quizzes.get("1").get('answers')[1] == "1.2")
         self.assertTrue(quizzes.get("1").get('answers')[2] == "-1.3 negative number")
 
-        self.assertTrue(quizzes.get("3").get('answers')[0] == "Example answer #1")
-        self.assertTrue(quizzes.get("3").get('answers')[1] == "Example answer #2")
-        self.assertTrue(quizzes.get("3").get('answers')[2] == "Example answer #3")
+        self.assertTrue(quizzes.get("3").get('question') == "Testing normalization?")
+        self.assertTrue(quizzes.get("3").get('answers')[0] == "The Tª is -10ºC")
+        self.assertTrue(quizzes.get("3").get('answers')[1] == "Has <10mm2 and >=-10.0Kg")
+        self.assertTrue(quizzes.get("3").get('answers')[2] == "The discount is +12%")
+
+        self.assertTrue(quizzes.get("7").get('answers')[0] == "Disolución del CPBV")
 
         # Check correct answers
         self.assertEqual(quizzes.get("1").get('correct_answer'), 0)
@@ -149,6 +165,7 @@ class TestQuizify(unittest.TestCase):
         self.assertEqual(quizzes.get("4").get('correct_answer'), 1)
         self.assertEqual(quizzes.get("5").get('correct_answer'), 0)
         self.assertEqual(quizzes.get("6.1").get('correct_answer'), 1)
+        self.assertEqual(quizzes.get("7").get('correct_answer'), 2)
 
 
 if __name__ == '__main__':

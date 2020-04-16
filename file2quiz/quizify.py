@@ -8,14 +8,14 @@ from file2quiz import utils
 
 # (num/letter) + (symbols+/space*)
 #RGX_BASE = r"([\.\)\-\]\t ]+)"
-RGX_BASE = r"([\t ]*[\p{posix_punct}\t]+[\t ]*)"
+RGX_BASE = r"([\t ]*[\.\)\-\]\t]+[\t ]*)"
 
 # Questions startswith [¡¿, letter] or [number with a whitespace,+,-];  weird case "1.2.2" => (Not a question"
 # Answers startswith [¡¿, letter] or [number with a whitespace,+,-]; weird case "a.2.2" => "a) 2.2"
-RGX_QUESTION = regex.compile(r"^(\d+[\d\.]*?)"       + RGX_BASE + "(?=[¡¿\t ]*[\p{Latin}]+|[-+\t ]+[\d]+)", regex.MULTILINE)
-RGX_ANSWER = regex.compile(r"^([\d\.]*[a-zA-Z]{1})" + RGX_BASE + "(?=[¡¿\t ]*[\p{Latin}]+|[-+\t ]?[\d]+)", regex.MULTILINE)
+RGX_QUESTION = regex.compile(r"^(\d+[\d\.]*?)"       + RGX_BASE + "(?=[¡¿\t\"\' ]*[\p{Latin}]+|(>|>=|<|<=)?[\-\+\t ]+[\d]+)", regex.MULTILINE)
+RGX_ANSWER = regex.compile(r"^([\d\.]*[a-zA-Z]{1})" + RGX_BASE + "(?=[¡¿\t\"\' ]*[\p{Latin}]+|(>|>=|<|<=)?[\-\+\t ]?[\d]+)", regex.MULTILINE)
 
-# (debug) ascii: (\d+[\d\.]*?)([\.\)\-\t ]+[\t ]*)(?=[¡¿\t ]*[a-zA-Z]+|[-+\t ]+[\d]+)
+# (debug) ascii: ^([\d\.]*[a-zA-Z]{1})([\t ]*[\.\)\-\]\t]+[\t ]*)(?=[¡¿\t\"\' ]*[a-zA-Z]+|(>|>=|<|<=)?[\-\+\t ]?[\d]+)
 
 # Reserved words to not change
 si_prefixes = ['', 'Y', 'Z', 'E', 'P', 'T', 'G', 'M', 'k', 'h', 'd', 'c', 'm', 'μ', 'n', 'p', 'f', 'a', 'z', 'y']
@@ -29,15 +29,22 @@ RESERVED_WORDS = possible_units
 def preprocess_text(text, blacklist, mode):
     # Remove unwanted characters
     text = text \
+        .replace('`a', 'à').replace('´a', 'á').replace('¨a', 'ä')\
+        .replace('`e', 'è').replace('´e', 'é').replace('¨e', 'ë')\
+        .replace('`i', 'ì').replace('´i', 'í').replace('¨i', 'ï')\
+        .replace('`o', 'ò').replace('´o', 'ó').replace('¨o', 'ö')\
+        .replace('`u', 'ù').replace('´u', 'ú').replace('¨u', 'ü')\
+        .replace('¨', '\"') \
         .replace('“', '\"').replace('”', '\"') \
         .replace('‘', '\'').replace('’', '\'') \
-        .replace('€)', 'c)') \
-        .replace('©', 'c)') \
         .replace('``', '\"') \
         .replace('´´', '\"') \
         .replace('’', '\'') \
         .replace('´', '') \
         .replace('`', '') \
+        .replace('…', '...') \
+        .replace('€)', 'c)') \
+        .replace('©', 'c)') \
         .replace('\ufeff', '')
 
     # Only latin characters + numbers + punctuation + whitespaces. (this also includes emojis)
@@ -66,7 +73,7 @@ def normalize_question(text, remove_id=True, sentence_case=True):
         text = regex.sub(RGX_QUESTION, "", text)
 
     # Remove space before quotation mark or colons
-    text = regex.sub(r"([\s,;:\-\.\?]*)([\?:])(\s*)$", r"\2", text)
+    text = regex.sub(r"([\s,;:\-\.\?\"\']*)([\?:\"\'])(\s*)$", r"\2", text)
 
     # Generic normalization
     text = normalize_generic(text, sentence_case)
@@ -99,14 +106,38 @@ def normalize_generic(text, sentence_case=True):
     text = regex.sub(r"(?<=\p{Latin}+)([\-\u2012\u2013\u2014\u2015\u2053]+\s+)(?=\p{Latin}+)", '', text)
 
     # Remove space before/after a parentheses, quotation mark, etc
-    text = regex.sub(r"(?<=[\(\[\{\¿\¡]+)(\s+)", '', text)
-    text = regex.sub(r"(\s+)(?=[\)\]\}\?\!]+)", '', text)
-    return text
+    text = regex.sub(r"(?<=[\(\[\{\¿\¡\"\']+)(\s+)", '', text)
+    text = regex.sub(r"(\s+)(?=[\)\]\}\?\!\"\'\,\.]+)", '', text)
+
+    # Metric rules (remove ampere "a" to avoid problems)
+    rgx_metrics = regex.compile(r"(?<=\d+)(\s*)(?=(K|H|D|Da|d|c|m)?(m|s|g|hz|w|v|k|t|min|h|n)(2|3|²|³)?(?!\p{Latin}))", regex.IGNORECASE|regex.MULTILINE)
+    text = regex.sub(rgx_metrics, '', text)
+
+    # Number signs
+    rgx_num_signs = regex.compile(r"(?<=\+|\-)(\s*)(?=\d+)", regex.IGNORECASE | regex.MULTILINE)
+    text = regex.sub(rgx_num_signs, '', text)
+
+    # Other number signs (>, <, >=, <=)
+    rgx_percentage = regex.compile(r"(?<=<|<=|>|>=)(\s*)(?=[\+|\-]?\d+)", regex.IGNORECASE | regex.MULTILINE)
+    text = regex.sub(rgx_percentage, '', text)
+
+    # Percentage
+    rgx_percentage = regex.compile(r"(?<=\d+)(\s*)%(\s*)(?!\w)", regex.IGNORECASE | regex.MULTILINE)
+    text = regex.sub(rgx_percentage, '%', text)
+
+    # Temperature 1
+    rgx_temp = regex.compile(r"(?<=\d+)(\s*)º(\s*)C(?!\w)", regex.IGNORECASE|regex.MULTILINE)
+    text = regex.sub(rgx_temp, 'ºC', text)
+
+    # Temperature 2
+    rgx_temp = regex.compile(r"(\s*)T(\s*)ª(?!\w)", regex.IGNORECASE|regex.MULTILINE)
+    text = regex.sub(rgx_temp, ' Tª', text)
+    return text.strip()
 
 
 def q_summary(text, length=50):
-    text = text.replace("\n", "")
-    text = text if len(text)<length else text[:length] + "..."
+    text = utils.remove_whitespace(text)
+    text = text if len(text) < length else text[:length] + "..."
     return text
 
 

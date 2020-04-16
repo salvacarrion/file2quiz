@@ -9,10 +9,11 @@ from file2quiz import utils, converter, reader
 from io import StringIO
 from bs4 import BeautifulSoup
 from tika import parser as tp
+import cssutils
 
 
 def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang="eng", dpi=300, psm=3, oem=3, save_files=False,
-                 extensions=None):
+                 extensions=None, xml_selector=None, *args, **kwargs):
     print(f'##############################################################')
     print(f'### TEXT EXTRACTION')
     print(f'##############################################################\n')
@@ -27,6 +28,10 @@ def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang
     txt_dir = os.path.join(output_dir, "txt")
     utils.create_folder(txt_dir) if save_files else None
 
+    # Create output dir (selector)
+    txt_selector_dir = os.path.join(output_dir, "txt_selector")
+    utils.create_folder(txt_selector_dir) if save_files and xml_selector else None
+
     # Extract text
     extracted_texts = []  # list of tuples (text, filename)
     for i, filename in enumerate(files, 1):
@@ -37,14 +42,14 @@ def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang
         print(f'==============================================================')
 
         # Read file
-        txt_pages = read_file(filename, output_dir, use_ocr, lang, dpi, psm, oem)
-        text = "\n".join(txt_pages)
+        text, text_selected = read_file(filename, output_dir, use_ocr, lang, dpi, psm, oem,
+                                        xml_selector=xml_selector, *args, **kwargs)
 
         # Remove blacklisted words
         text = utils.replace_words(text, blacklist, replace="")
 
         # Add extracted texts
-        extracted_texts.append((text, filename))
+        extracted_texts.append((text, text_selected, filename))
 
         # Show info
         if not text.strip():
@@ -56,6 +61,9 @@ def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang
             print(f"\t- [INFO] Saving file... ({tail}.txt)")
             save_txt(text, os.path.join(txt_dir, f"{tail}.txt"))
 
+            if xml_selector and text_selected:
+                save_txt(text_selected, os.path.join(txt_selector_dir, f"{tail}_selected.txt"))
+
     print("")
     print("--------------------------------------------------------------")
     print("SUMMARY")
@@ -65,7 +73,9 @@ def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang
     return extracted_texts
 
 
-def read_file(filename, output_dir, use_ocr, lang, dpi, psm, oem):
+def read_file(filename, output_dir, use_ocr, lang, dpi, psm, oem, *args, **kwargs):
+    text, text_selected = None, None
+
     # Get path values
     basedir, tail = os.path.split(filename)
     fname, extension = utils.get_fname(filename)
@@ -73,22 +83,23 @@ def read_file(filename, output_dir, use_ocr, lang, dpi, psm, oem):
 
     # Select method depending on the extension
     if extension in {".txt"}:
-        txt_pages = [read_txt(filename)]
+        text = read_txt(filename)
     elif extension in {".pdf"}:
         txt_pages = read_pdf(filename, output_dir, use_ocr, lang, dpi, psm, oem)
+        text = "\n\n".join(txt_pages)
     elif extension in {".jpg", ".jpeg", ".jfif", ".png", ".tiff", ".bmp", ".pnm"}:
-        txt_pages = read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=tail)
+        text = read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=tail)
     elif extension in {".html", ".htm"}:
-        txt_pages = read_html(filename)
+        text, text_selected = read_html(filename, *args, **kwargs)
     elif extension in {".doc", ".docx"}:
-        txt_pages = read_docx(filename)
+        text, text_selected = read_docx(filename, *args, **kwargs)
     elif extension in {".rtf"}:
-        txt_pages = read_docx(filename)
+        text = _read_tika(filename)
     else:
         print(f"\t- [WARNING] Unknown format (*{extension}). Trying with generic parser. ({tail})")
-        txt_pages = _read_tika(filename)
+        text = _read_tika(filename)
 
-    return txt_pages  # Must be a list of string
+    return text, text_selected  # Must be a list of string
 
 
 def read_txt(filename):
@@ -124,7 +135,7 @@ def read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=None, empty
 
     # Read file
     text = read_txt(filename=f"{savepath}/{tail}.txt")
-    return [text]
+    return text
 
 
 def read_pdf(filename, output_dir, use_ocr, lang, dpi, psm, oem):
@@ -152,7 +163,7 @@ def read_pdf_ocr(filename, output_dir, lang, dpi, psm, oem, img_format="tiff"):
     for i, filename in enumerate(scanned_files, 1):
         print("\t- [INFO] Performing OCR {} of {}".format(i, len(scanned_files)))
         text = read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=tail, empty_folder=False)
-        pages_txt.append(text[0])
+        pages_txt.append(text)
 
     return pages_txt
 
@@ -182,19 +193,113 @@ def read_pdf_text(filename):
 def _read_tika(filename, *args, **kargs):
     parsed = tp.from_file(filename)
     text = parsed["content"].strip()
-    return [text]
+    return text
 
 
-def read_html(filename):
-    return _read_tika(filename)
+
+def read_html(filename, xml_selector=None, *args, **kwargs):
+    if not xml_selector:
+        return _read_tika(filename), None
+    else:
+        from selenium import webdriver
+        from selenium.webdriver.common.by import By
+
+        # Set browser
+        options = webdriver.ChromeOptions()
+        options.add_argument('headless')
+        driver = webdriver.Chrome(chrome_options=options)
+
+        # Request site
+        driver.get("file://" + filename)
+
+        # Get all text
+        text = driver.find_element(By.CSS_SELECTOR, "*").text
+
+        # Walk through all the elements
+        text_selector = []
+        for elem in driver.find_elements(By.CSS_SELECTOR, "*"):
+            elem_text = utils.remove_whitespace(str(elem.text))
+            if elem_text:
+                # Really slow
+                is_bold = int(elem.value_of_css_property('font-weight')) >= 700
+                if is_bold:
+                    text_selector.append(elem_text)
+
+        # Close driver
+        driver.quit()
+
+        text_selector = "\n".join(text_selector).strip()
+        return text, text_selector
+
+
+def _aux_selector(xhtml_data, *args, **kwargs):
+    elements = xhtml_data.find_all('b')
+    text = [elem.text for elem in elements] if elements else ""
+    return text
+
+
+def read_html_bs4(filename, xml_selector=None, *args, **kwargs):
+    # Read file
+    with open(filename, encoding='utf-8') as f:
+        data = f.read()
+    xhtml_data = BeautifulSoup(data, features='lxml')
+
+    # Extract all text
+    text = xhtml_data.text
+
+    # Extract selected text
+    if xml_selector:
+        text_selector = []
+
+        # Use custom function?
+        xml_func = xml_selector if callable(xml_selector) else _aux_selector
+
+        # Walk through elements
+        for elem_text in xml_func(xhtml_data, *args, **kwargs):
+            text_selected = utils.remove_whitespace(elem_text)  # No breaklines
+            text_selector.append(text_selected)
+
+        # Join selected text (one element per line)
+        text_selector = "\n".join(text_selector)
+    else:
+        text_selector = None
+
+    return text, text_selector
 
 
 def read_rtf(filename):
     return _read_tika(filename)
 
 
-def read_docx(filename):
-    return _read_tika(filename)
+def read_docx(filename, xml_selector=None):
+    if not xml_selector:
+        return _read_tika(filename), None
+    else:
+        from docx import Document  # Problems with "from collections import Sequence" (deprecated)
+        document = Document(filename)
+        text_all = []
+        text_bold = []
+        for p in document.paragraphs:
+            # Get paragraphs
+            text = p.text
+            text_all.append(text)
+
+            # Get bold text
+            # Not all bold paragraphs are mark as "bold" neither runs (check both)
+            if xml_selector and text.strip():
+                if p.style.font.bold:  # Whole paragraph is bold
+                    text_bold.append(text)
+                else:  # Walk through chunks
+                    text = " "
+                    for r in p.runs:
+                        if r.bold:
+                            text += r.text + " "
+                    text = utils.remove_whitespace(text)
+                    text_bold.append(text) if text else None
+
+        text_all = "\n".join(text_all)
+        text_bold = "\n".join(text_bold)
+        return text_all, text_bold
 
 
 def read_blacklist(path):
