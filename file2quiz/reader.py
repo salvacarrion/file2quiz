@@ -13,7 +13,7 @@ import cssutils
 
 
 def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang="eng", dpi=300, psm=3, oem=3, save_files=False,
-                 extensions=None, xml_selector=None, *args, **kwargs):
+                 extensions=None, extract_bold=None, *args, **kwargs):
     print(f'##############################################################')
     print(f'### TEXT EXTRACTION')
     print(f'##############################################################\n')
@@ -30,7 +30,7 @@ def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang
 
     # Create output dir (selector)
     txt_selector_dir = os.path.join(output_dir, "txt_selector")
-    utils.create_folder(txt_selector_dir) if save_files and xml_selector else None
+    utils.create_folder(txt_selector_dir) if save_files and extract_bold else None
 
     # Extract text
     extracted_texts = []  # list of tuples (text, filename)
@@ -43,7 +43,7 @@ def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang
 
         # Read file
         text, text_selected = read_file(filename, output_dir, use_ocr, lang, dpi, psm, oem,
-                                        xml_selector=xml_selector, *args, **kwargs)
+                                        extract_bold=extract_bold, *args, **kwargs)
 
         # Remove blacklisted words
         text = utils.replace_words(text, blacklist, replace="")
@@ -61,7 +61,7 @@ def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang
             print(f"\t- [INFO] Saving file... ({tail}.txt)")
             save_txt(text, os.path.join(txt_dir, f"{tail}.txt"))
 
-            if xml_selector and text_selected:
+            if extract_bold and text_selected:
                 save_txt(text_selected, os.path.join(txt_selector_dir, f"{tail}_selected.txt"))
 
     print("")
@@ -196,9 +196,8 @@ def _read_tika(filename, *args, **kargs):
     return text
 
 
-
-def read_html(filename, xml_selector=None, *args, **kwargs):
-    if not xml_selector:
+def read_html(filename, extract_bold=None, *args, **kwargs):
+    if not extract_bold:
         return _read_tika(filename), None
     else:
         from selenium import webdriver
@@ -271,8 +270,8 @@ def read_rtf(filename):
     return _read_tika(filename)
 
 
-def read_docx(filename, xml_selector=None):
-    if not xml_selector:
+def read_docx(filename, extract_bold=None):
+    if not extract_bold:
         return _read_tika(filename), None
     else:
         from docx import Document  # Problems with "from collections import Sequence" (deprecated)
@@ -286,7 +285,7 @@ def read_docx(filename, xml_selector=None):
 
             # Get bold text
             # Not all bold paragraphs are mark as "bold" neither runs (check both)
-            if xml_selector and text.strip():
+            if extract_bold and text.strip():
                 if p.style.font.bold:  # Whole paragraph is bold
                     text_bold.append(text)
                 else:  # Walk through chunks

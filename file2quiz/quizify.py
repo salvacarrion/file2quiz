@@ -110,7 +110,7 @@ def normalize_generic(text, sentence_case=True):
     text = regex.sub(r"(\s+)(?=[\)\]\}\?\!\"\'\,\.]+)", '', text)
 
     # Metric rules (remove ampere "a" to avoid problems)
-    rgx_metrics = regex.compile(r"(?<=\d+)(\s*)(?=(K|H|D|Da|d|c|m)?(m|s|g|hz|w|v|k|t|min|h|n)(2|3|²|³)?(?!\p{Latin}))", regex.IGNORECASE|regex.MULTILINE)
+    rgx_metrics = regex.compile(r"(?<=\d+)(\s*)(?=(K|H|D|Da|d|c|m)?(m|s|g|hz|w|v|k|t|min|h|n|Pa|bar)(2|3|²|³)?(?!\p{Latin}))", regex.IGNORECASE|regex.MULTILINE)
     text = regex.sub(rgx_metrics, '', text)
 
     # Number signs

@@ -42,7 +42,7 @@ def main():
 
         # Extract text
         file2quiz.extract_text(input_dir, output_dir, blacklist_path, args.use_ocr, args.lang, args.dpi, args.psm, args.oem,
-                               xml_selector=args.extract_bold,
+                               extract_bold=args.extract_bold,
                                save_files=True)
         print("Done!")
 
@@ -57,7 +57,7 @@ def main():
         if args.action == "file2quiz":
             file2quiz.extract_text(input_dir, output_dir, blacklist_path,
                                    args.use_ocr, args.lang, args.dpi, args.psm, args.oem,
-                                   xml_selector=args.xml_selector, save_files=True)
+                                   extract_bold=args.extract_bold, save_files=True)
 
         # Parse quizzes
         input_dir = os.path.join(output_dir, "txt")
