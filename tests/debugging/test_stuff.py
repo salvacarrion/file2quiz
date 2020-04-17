@@ -23,7 +23,8 @@ if __name__ == '__main__':
         234234       ml3
         234234      mlqweqwe
  """
-    text2 = file2quiz.preprocess_text(text)
+    text = file2quiz.preprocess_text(text)
+    text2 = file2quiz.preprocess_questions_block(text)
     # text2 = regex.sub(r"[\p{Latin}\p{posix_alnum}\p{posix_punct}\s]", '', text)
 
     print(f"Text1 ({len(text)}):" + text)

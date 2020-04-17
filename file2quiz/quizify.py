@@ -6,13 +6,9 @@ import string
 from file2quiz import reader
 from file2quiz import utils
 
-RGX_BASE = r"([\.\)\-\]\t ]+)"
-
-# Answers startswith [¡¿, letter] or [number with a whitespace,+,-]; weird case "a.2.2" => "a) 2.2"
-RGX_QUESTION = regex.compile(r"^(\d+[\d\.]*?)"       + RGX_BASE + "(?=[¡¿\t\"\' ]*[\p{Latin}]+|(>|>=|<|<=)?[\-\+\t ]+[\d]+)", regex.MULTILINE)
-RGX_ANSWER = regex.compile(r"^([\d\.]*[a-zA-Z]{1})([\.\)\-\]\t ]+.*)$", regex.MULTILINE)
-
-# (debug) ascii: ^([\d\.]*[a-zA-Z]{1})([\t ]*[\.\)\-\]\t]+[\t ]*)(?=[¡¿\t\"\' ]*[a-zA-Z]+|(>|>=|<|<=)?[\-\+\t ]?[\d]+)
+RGX_SPLITTER = r"[\)\-\]\t ]+.*$"  # Exclude "dots" as they can appear in the ID
+RGX_QUESTION = r"^\d+[\d\.]*"
+RGX_ANSWER = r"^[\d\.]*[a-zA-Z]{1}"
 
 
 def preprocess_text(text, blacklist=None, mode="auto"):
@@ -54,14 +50,6 @@ def preprocess_text(text, blacklist=None, mode="auto"):
     # Remove blacklisted words
     text = utils.replace_words(text, blacklist, replace="") if blacklist else text
 
-    # Detect start of question
-    rgx_fix_question = regex.compile(r"(?<=\d+)([\t ]+)(?=[¿?!¡])", re.MULTILINE)
-    text = regex.sub(rgx_fix_question, ".- ", text)
-
-    # Detect end of question
-    rgx_fix_question = regex.compile(r"^(\d+[\d\.]*)([\t ]+.*)(?=[?:]$|\.\.\.$)", re.MULTILINE)
-    text = regex.sub(rgx_fix_question, r"\1) \2", text)
-
     return text
 
 
@@ -77,20 +65,48 @@ def get_block_id(block, is_question):
         return None, block
 
 
+def preprocess_questions_block(text):
+    # Define delimiters
+    DELIMITER = "\n@\n@\n@\n"
+
+    # Detect start of question
+    pattern = regex.compile(fr"(?<={RGX_QUESTION})([\t ]+)(?=[¿?!¡])", re.MULTILINE)
+    text = regex.sub(pattern, r") ", text)
+
+    # Detect end of question
+    rgx_fix_question = regex.compile(fr"(?<={RGX_QUESTION})([\t ]+)(.*)(?=[?:]$|\.\.\.$)", re.MULTILINE)
+    text = regex.sub(rgx_fix_question, r") \2", text)
+
+    # Split block of questions
+    pattern = regex.compile(fr"({RGX_QUESTION})({RGX_SPLITTER})", regex.MULTILINE)
+    text = regex.sub(pattern, rf"{DELIMITER}\1\2", text)
+    raw_questions = text.split(DELIMITER)
+    raw_questions = [q for q in raw_questions[1:] if q.strip()] if raw_questions else []  # We can split the first chunk
+    return raw_questions
+
+
 def preprocess_answers_block(text, single_line=False):
     if single_line:
         raw_blocks = text.split('\n')
     else:
+        # Detect start of answer
+        pattern = regex.compile(fr"(?<={RGX_ANSWER})(\. ?)(?=[\s\S])", re.MULTILINE)
+        text = regex.sub(pattern, r") ", text)
+
         DELIMITER = "\n@\n@\n@\n"
-        stext = regex.sub(RGX_ANSWER, rf"{DELIMITER}\1\2", text)
+        pattern = regex.compile(fr"({RGX_ANSWER})({RGX_SPLITTER})", regex.MULTILINE)
+        stext = regex.sub(pattern, rf"{DELIMITER}\1\2", text)
         raw_blocks = stext.split(DELIMITER)
 
     # Remove hyphens excepts if it's a number
     blocks_cleaned = []
     for i, b in enumerate(raw_blocks):
         b_id, content = get_block_id(utils.remove_whitespace(b), is_question=bool(i == 0))
-        content_clean = regex.sub(r"^([\p{posix_punct}\s]*)(?=[\p{posix_punct}])", '', content)  # Remove hyphens
-        content_clean = regex.sub(r"^([\p{posix_punct}\s]*)(?=[\-\+\¿¡\"\'<>=]|>=|<=|==|\p{Latin})", '', content_clean)  # Remove hyphens
+        # Remove punctuation and whispaces except last character
+        content_clean = regex.sub(r"^([\p{posix_punct}\s]*)(?=[\p{posix_punct}])", '', content)
+        # Remove the rest of the punctuation except if it is a set of special character
+        content_clean = regex.sub(r"^([\p{posix_punct}\s]*)(?=[\-\+\¿¡\"\'<>=]|>=|<=|==|\p{Latin})", '', content_clean)
+        # Remove minus and pluses if it's not a number
         content_clean = regex.sub(r"^([\-\+]*)(?=\D)", '', content_clean)  # Remove hyphens
         if content_clean.strip():
             blocks_cleaned.append((b_id, content_clean))
@@ -305,16 +321,11 @@ def parse_questions(txt, num_expected_answers=None, mode="auto", *args, **kwargs
         raise ValueError(f"Unknown question mode: '{mode}'")
 
 
-def parse_questions_auto(txt, num_expected_answers, single_line, *args, **kwargs):
+def parse_questions_auto(text, num_expected_answers, single_line, *args, **kwargs):
     questions = []
 
-    # Define delimiters
-    DELIMITER = "\n@\n@\n@\n"
-
-    # Split block of questions
-    txt = regex.sub(RGX_QUESTION, rf"{DELIMITER}\1\2", txt)
-    raw_questions = txt.split(DELIMITER)
-    raw_questions = [q for q in raw_questions[1:] if q.strip()] if raw_questions else []  # We can split the first chunk
+    # Split questions
+    raw_questions = preprocess_questions_block(text)
 
     # Parse questions
     for i, raw_question in enumerate(raw_questions, 1):

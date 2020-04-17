@@ -79,12 +79,12 @@ class TestQuizify(unittest.TestCase):
             a) Example answer #1
             b) Example answer #2
 
-            3- Testing normalization   ???
+            3 Testing normalization   ???  
             a) the T    ª is   -    10 º        C  .
             b) has <  10      mm2 and >=    -  10.0    Kg.
             c) the discount is + 12   %
 
-            4\tTesting broken question from
+            4\t¿Testing broken question from
             1923?\t
             a\t   \t  Example answer #1
             b\t Example answer #2
