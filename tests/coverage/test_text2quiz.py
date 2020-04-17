@@ -68,54 +68,54 @@ class TestQuizify(unittest.TestCase):
             text to ignore
             text to ignore
             text to ignore
-            
+
 
             1---- -2 degrees is the...
             a\t1
             b.1.2
-            c)) -1.3 negative number
-             
-            2. Missing one answers: 
-            a) Example answer #1 
+            c-------1.3 negative number
+
+            2. Missing one answer and id:
+            a) Example answer #1
             b) Example answer #2
-            
-            3- Testing normalization   ???  
+
+            3- Testing normalization   ???
             a) the T    ª is   -    10 º        C  .
             b) has <  10      mm2 and >=    -  10.0    Kg.
-            c) the discount is + 12   %   
-            
+            c) the discount is + 12   %
+
             4\tTesting broken question from
-            1923?\t   
+            1923?\t
             a\t   \t  Example answer #1
             b\t Example answer #2
             c\t     Example answer #3
-            
+
             5 ))) 5 is a number, and
-            question 
+            question
             is
-            
-            also broken  :   
+
+            also broken  :
             a) Example answer #1
             b) Example answer #2
             c) Example answer #3
-            
-            6.1 ))) This question is
-            6.1 and is quite hard :   
+
+            6.1 ))) This question is 6.1 and
+            is quite hard :
             6.1a) Example answer #1
             6b) Example answer #2
             c) Example answer #3
-            
-            7. El procedimiento extraordinario de los 
-            10.0b, estatutos del CPBV, solo podrá ser referente 
-            a: 
-            a) Disolución del 
-            CPBV 
-            b) Modificación del objeto o fines del Consorcio 
-            c) Modificación del régimen financiero 
+
+            7. El procedimiento extraordinario de los
+            10.0b, estatutos del CPBV, solo podrá ser referente
+            a:
+            a) Disolución del
+            CPBV
+            b) Modificación del objeto o fines del Consorcio
+            c) Modificación del régimen financiero
             d) Todas son correctas
 
             ===
-            
+
             1-A 2.b
             3    // C
             4 b 5A,(6.1b)
