@@ -6,7 +6,7 @@ import string
 from file2quiz import reader
 from file2quiz import utils
 
-RGX_SPLITTER = r"[\)\-\]\t ]+.*$"  # Exclude "dots" as they can appear in the ID
+RGX_SPLITTER = r"[\)\-\]\t ]+"  # Exclude "dots" as they can appear in the ID.
 RGX_QUESTION = r"^\d+[\d\.]*"
 RGX_ANSWER = r"^[\d\.]*[a-zA-Z]{1}"
 
@@ -54,15 +54,21 @@ def preprocess_text(text, blacklist=None, mode="auto"):
 
 
 def get_block_id(block, is_question):
-    if is_question:
-        m = re.search(r"^(\d+[\d\.]*)([\.\)\]\t\- ]+?)(.*$)", block)
-    else:
-        m = re.search(r"^([\d\.]*[a-zA-Z]{1})([\.\)\]\t\- ]+?)(.*$)", block)
+    ID_RGX = RGX_QUESTION if is_question else RGX_ANSWER
+    pattern = regex.compile(fr"^({ID_RGX})({RGX_SPLITTER}?)(.*$)")
+    m = regex.search(pattern, block)
 
-    if m:
-        return m.group(1), m.group(3)
-    else:
+    if not m:
         return None, block
+    else:
+        b_id = m.group(1)
+        b_text = m.group(3)
+
+        # Normalize ID
+        b_id = regex.sub(r"\.*$", "", b_id)  # Remove trailing dots
+        b_id = utils.remove_whitespace(b_id)  # Just in case
+        b_id = b_id.lower()
+        return b_id, b_text
 
 
 def preprocess_questions_block(text):
@@ -78,7 +84,7 @@ def preprocess_questions_block(text):
     text = regex.sub(rgx_fix_question, r") \2", text)
 
     # Split block of questions
-    pattern = regex.compile(fr"({RGX_QUESTION})({RGX_SPLITTER})", regex.MULTILINE)
+    pattern = regex.compile(fr"({RGX_QUESTION})({RGX_SPLITTER}.*$)", regex.MULTILINE)
     text = regex.sub(pattern, rf"{DELIMITER}\1\2", text)
     raw_questions = text.split(DELIMITER)
     raw_questions = [q for q in raw_questions[1:] if q.strip()] if raw_questions else []  # We can split the first chunk
@@ -93,8 +99,9 @@ def preprocess_answers_block(text, single_line=False):
         pattern = regex.compile(fr"(?<={RGX_ANSWER})(\. ?)(?=[\s\S])", re.MULTILINE)
         text = regex.sub(pattern, r") ", text)
 
+        # Split answers
         DELIMITER = "\n@\n@\n@\n"
-        pattern = regex.compile(fr"({RGX_ANSWER})({RGX_SPLITTER})", regex.MULTILINE)
+        pattern = regex.compile(fr"({RGX_ANSWER})({RGX_SPLITTER}.*$)", regex.MULTILINE)
         stext = regex.sub(pattern, rf"{DELIMITER}\1\2", text)
         raw_blocks = stext.split(DELIMITER)
 
@@ -304,8 +311,15 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, num_answers=None, mo
 
     # Check number of questions and answers
     if solutions and len(questions) != len(solutions):
-        print(f"\t- [WARNING] The number of questions ({len(questions)}) "
-              f"and solutions ({len(solutions)}) do not match")
+        # Get missing answers
+        q_ids = set([str(q[0][0]) for q in questions])
+        sol_ids = set([str(sol[0]) for sol in solutions])
+        missing_questions = ", ".join(list(sol_ids - q_ids))
+        missing_ans = ", ".join(list(q_ids - sol_ids))
+
+        print(f"\t- [WARNING] The number of questions ({len(questions)}) and solutions ({len(solutions)}) do not match")
+        print(f"\t\t- Questions missing: [{missing_questions}]")
+        print(f"\t\t- Questions with missing answers: [{missing_ans}]")
 
     # Build quiz
     quiz = build_quiz(questions, solutions)
@@ -333,7 +347,7 @@ def parse_questions_auto(text, num_expected_answers, single_line, *args, **kwarg
         q_blocks = preprocess_answers_block(raw_question, single_line=single_line)
 
         # Normalize question items
-        parsed_question = parse_normalize_question(q_blocks, num_expected_answers, i, *args, **kwargs)
+        parsed_question = parse_normalize_question(q_blocks, num_expected_answers, i, single_line, *args, **kwargs)
 
         # Add question
         if parsed_question:
@@ -342,7 +356,7 @@ def parse_questions_auto(text, num_expected_answers, single_line, *args, **kwarg
     return questions
 
 
-def parse_normalize_question(blocks, num_expected_answers, suggested_id, *args, **kwargs):
+def parse_normalize_question(blocks, num_expected_answers, suggested_id, single_line, *args, **kwargs):
     # Remove empty lines
     q_blocks = []
     for b_id, content in blocks:
@@ -354,15 +368,28 @@ def parse_normalize_question(blocks, num_expected_answers, suggested_id, *args, 
         print(f'\t- [INFO] Block with less than two answers. Skipping block: [Q: "{q_summary(q_blocks[0])}"]')
         return None
 
-    # Set policy depending on the questions and answers
-    policy = "single-line-question"
+    # Infer questions/answers
+    # Join questions and answers if needed (IDs must be already normalized)
+    if single_line:
+        new_blocks = q_blocks
+    else:
+        new_blocks = [q_blocks[0]]
+        for i, (b_id, b_text) in enumerate(q_blocks[1:]):
+            idx_last = len(new_blocks) - 1
+            if b_id is None:  # Join with previous
+                new_blocks[idx_last][1] += " " + b_text
+            elif len(b_id) == 1 and string.ascii_lowercase[idx_last] != b_id:  # ej: ("a", "una casa")
+                new_blocks[idx_last][1] += f" {b_id} {b_text}"
+            else:  # Correct or weird IDs (3.2a, 12.b, etc)
+                new_blocks.append([b_id, b_text])
+
+    # Check correctness
     extra_answers = []
     if num_expected_answers:
         # Too many answers
         if len(q_blocks) > num_expected_answers + 1:
             print(f"\t- [WARNING] More answers ({len(q_blocks)-1}) than expected ({num_expected_answers}). "
-                  f'Inferring question [Q: "{q_summary(q_blocks[0])}]"')
-            policy = "multiline-question"
+                  f"Inferring question [Q: \"{q_summary(q_blocks[0])}\"]")
 
         # Too few answers
         elif len(q_blocks) < num_expected_answers + 1:
@@ -375,22 +402,16 @@ def parse_normalize_question(blocks, num_expected_answers, suggested_id, *args, 
             print(f"\t- [WARNING] Less answers ({len(q_blocks)-1}) than expected ({num_expected_answers}). "
                   f'Filling {len(extra_answers)} missing answers. [Q: "{q_summary(q_blocks[0])}"]')
 
-    # Choose questions and answers
-    question = q_blocks[0]
-    if policy == "single-line-question":  # Rule: Single-line question and answers variable
-        answers = q_blocks[1:] + extra_answers
-
-    elif policy == "multiline-question":  # Rule: Multi-line question and answers fixed
-        question[1] = " ".join([b[1] for b in q_blocks[:-num_expected_answers]])
-        answers = q_blocks[-num_expected_answers:] + extra_answers
-    else:
-        raise NameError("Unknown policy")
+    # Add extra block
+    new_blocks += extra_answers
 
     # Normalize question
-    question[0] = regex.sub(r"\.*$", "", question[0]) if question[0] else suggested_id
+    question = new_blocks[0]
+    question[0] = question[0] if question[0] else suggested_id
     question[1] = normalize_question(question[1])
 
     # Normalize answer
+    answers = new_blocks[1:]
     for i, ans in enumerate(answers):
         ans[0] = string.ascii_lowercase[i]
         ans[1] = normalize_answer(ans[1])

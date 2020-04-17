@@ -16,7 +16,7 @@ class TestQuizify(unittest.TestCase):
         output_dir = os.path.join(ROOT_DIR, "examples")
         blacklist_path = os.path.join(ROOT_DIR, "examples/blacklist.txt")
         token_answer = "^(===|solUtIoNs:)"  # Check case insensitivity // There are problems with this token: "==="
-        extensions = {".txt", ".pdf", ".rtf", ".docx", ".html", ".png"}
+        extensions = {".docx"} #{".txt", ".pdf", ".rtf", ".docx", ".html", ".png"}
 
         # Parse raw files
         print("Extracting text...")
@@ -98,6 +98,7 @@ class TestQuizify(unittest.TestCase):
             a) Example answer #1
             b) Example answer #2
             c) Example answer #3
+            a this is part of the 3rd question
 
             6.1 ))) This question is 6.1 and
             is quite hard :
@@ -105,14 +106,16 @@ class TestQuizify(unittest.TestCase):
             6b) Example answer #2
             c) Example answer #3
 
-            7. El procedimiento extraordinario de los
-            10.0b, estatutos del CPBV, solo podrá ser referente
+            7. this question is also is tricky because of this
+            10.0b, and this
             a:
-            a) Disolución del
-            CPBV
-            b) Modificación del objeto o fines del Consorcio
-            c) Modificación del régimen financiero
-            d) Todas son correctas
+            a) Example answer
+            number 1
+            b) More answers 2
+            c) More answers 3
+            e do not confuse with a answer id
+            d) Last answer
+            a nd this neither
 
             ===
 
@@ -156,7 +159,8 @@ class TestQuizify(unittest.TestCase):
         self.assertTrue(quizzes.get("3").get('answers')[1] == "Has <10mm2 and >=-10.0Kg")
         self.assertTrue(quizzes.get("3").get('answers')[2] == "The discount is +12%")
 
-        self.assertTrue(quizzes.get("7").get('answers')[0] == "Disolución del CPBV")
+        self.assertTrue(quizzes.get("5").get('answers')[2] == "Example answer #3 a this is part of the 3rd question")
+        self.assertTrue(quizzes.get("7").get('answers')[2] == "More answers 3 e do not confuse with a answer id")
 
         # Check correct answers
         self.assertEqual(quizzes.get("1").get('correct_answer'), 0)
