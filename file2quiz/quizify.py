@@ -223,7 +223,9 @@ def build_quiz(questions, solutions=None):
             if id_question in quiz:
                 quiz[id_question]['correct_answer'] = answer
             else:
-                print("\t- [WARNING] Missing question for answer '{}'".format(id_question))
+                pass
+                # It's already notified aboved
+                #print("\t- [WARNING] Missing question for answer '{}'".format(id_question))
     return quiz
 
 
@@ -318,15 +320,19 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, num_answers=None, mo
 
     # Check number of questions and answers
     if solutions and len(questions) != len(solutions):
-        # Get missing answers
+        # Get missing questions/answers
         q_ids = set([str(q[0][0]) for q in questions])
         sol_ids = set([str(sol[0]) for sol in solutions])
-        missing_questions = ", ".join(list(sol_ids - q_ids))
-        missing_ans = ", ".join(list(q_ids - sol_ids))
+
+        # Get differences
+        missing_questions = sol_ids - q_ids
+        missing_ans = q_ids - sol_ids
+        missing_questions_str = ", ".join(missing_questions)
+        missing_ans_str = ", ".join(list(missing_ans))
 
         print(f"\t- [WARNING] The number of questions ({len(questions)}) and solutions ({len(solutions)}) do not match")
-        print(f"\t\t- Questions missing: [{missing_questions}]")
-        print(f"\t\t- Questions with missing answers: [{missing_ans}]")
+        print(f"\t\t- Questions missing ({len(missing_questions)}): [{missing_questions_str}]")
+        print(f"\t\t- Questions with missing answers ({len(missing_ans)}): [{missing_ans_str}]")
 
     # Build quiz
     quiz = build_quiz(questions, solutions)
