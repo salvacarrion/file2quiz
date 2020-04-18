@@ -50,6 +50,10 @@ def preprocess_text(text, blacklist=None, mode="auto"):
     # Remove blacklisted words
     text = utils.replace_words(text, blacklist, replace="") if blacklist else text
 
+    # (Too many drawbacks) Remove breaklines for problematic non-id numbers ("el\n155 art. blablbal"
+    # pattern = regex.compile(r"(?<=\p{Latin})\n(?=\d+[ ]+\p{Latin})", re.MULTILINE)
+    # text = regex.sub(pattern, " ", text)
+
     return text
 
 
