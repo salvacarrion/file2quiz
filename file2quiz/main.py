@@ -24,7 +24,7 @@ def main():
     parser.add_argument('--save-txt', help="Save quizzes in txt", default=False, action="store_true")
 
     # Tesseract
-    parser.add_argument('--use-ocr', help="Use an OCR to extract text from the PDFs", default=True, type=bool)
+    parser.add_argument('--use-ocr', help="Use an OCR to extract text from the PDFs", default=False, type=bool)
     parser.add_argument('--lang', help="[Tesseract] Specify language(s) used for OCR", default="spa")
     parser.add_argument('--dpi', help="[Tesseract] Specify DPI for input image", default=300, type=int)
     parser.add_argument('--psm', help="[Tesseract] Specify page segmentation mode", default=3, type=int)

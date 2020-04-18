@@ -363,11 +363,6 @@ def parse_normalize_question(blocks, num_expected_answers, suggested_id, single_
         content = content.strip()
         q_blocks.append([b_id, content]) if content else None
 
-    # Check number of items
-    if len(q_blocks) < 2+1:
-        print(f'\t- [INFO] Block with less than two answers. Skipping block: [Q: "{q_summary(q_blocks[0])}"]')
-        return None
-
     # Infer questions/answers
     # Join questions and answers if needed (IDs must be already normalized)
     if single_line:
@@ -383,24 +378,29 @@ def parse_normalize_question(blocks, num_expected_answers, suggested_id, single_
             else:  # Correct or weird IDs (3.2a, 12.b, etc)
                 new_blocks.append([b_id, b_text])
 
+    # Check number of items
+    if len(new_blocks) < 2+1:
+        print(f'\t- [INFO] Block with less than two answers. Skipping block: [Q: "{q_summary(new_blocks[0])}"]')
+        return None
+
     # Check correctness
     extra_answers = []
     if num_expected_answers:
         # Too many answers
-        if len(q_blocks) > num_expected_answers + 1:
-            print(f"\t- [WARNING] More answers ({len(q_blocks)-1}) than expected ({num_expected_answers}). "
-                  f"Inferring question [Q: \"{q_summary(q_blocks[0])}\"]")
+        if len(new_blocks) > num_expected_answers + 1:
+            print(f"\t- [WARNING] More answers ({len(new_blocks)-1}) than expected ({num_expected_answers}). "
+                  f"[Q: \"{q_summary(new_blocks[0])}\"]")
 
         # Too few answers
-        elif len(q_blocks) < num_expected_answers + 1:
+        elif len(new_blocks) < num_expected_answers + 1:
             # Auto-fill answers?
             missing_ans_txt = kwargs.get("fill_missing_answers")
             if missing_ans_txt:
-                num_missing_ans = (num_expected_answers + 1) - len(q_blocks)
+                num_missing_ans = (num_expected_answers + 1) - len(new_blocks)
                 extra_answers = [["z", missing_ans_txt] for _ in range(num_missing_ans)]
 
-            print(f"\t- [WARNING] Less answers ({len(q_blocks)-1}) than expected ({num_expected_answers}). "
-                  f'Filling {len(extra_answers)} missing answers. [Q: "{q_summary(q_blocks[0])}"]')
+            print(f"\t- [WARNING] Less answers ({len(new_blocks)-1}) than expected ({num_expected_answers}). "
+                  f'Filling {len(extra_answers)} missing answers. [Q: "{q_summary(new_blocks[0])}"]')
 
     # Add extra block
     new_blocks += extra_answers

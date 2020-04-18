@@ -122,6 +122,14 @@ def save_json(quiz, filename):
         json.dump(quiz, f)
 
 
+def read_quiz(filename):
+    return read_json(filename)
+
+
+def save_quiz(quiz, filename):
+    return save_json(quiz, filename)
+
+
 def read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=None, empty_folder=True):
     basedir, tail = os.path.split(filename)
 
@@ -138,11 +146,17 @@ def read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=None, empty
     return text
 
 
-def read_pdf(filename, output_dir, use_ocr, lang, dpi, psm, oem):
+def read_pdf(filename, output_dir, use_ocr, lang, dpi, psm, oem, min_char=200):
     if use_ocr:
         return read_pdf_ocr(filename, output_dir, lang, dpi, psm, oem)
     else:
-        return read_pdf_text(filename)
+        pages = read_pdf_text(filename)
+        # Check number of characters
+        total_chars = sum([len(p.strip()) for p in pages if isinstance(p, str)])
+        if total_chars < min_char:
+            print(f"\t- [WARNING] Too few characters ({total_chars}) were detected on the PDF."
+                  f"An OCR probably needed to extract the text from this file.")
+        return pages
 
 
 def read_pdf_ocr(filename, output_dir, lang, dpi, psm, oem, img_format="tiff"):
