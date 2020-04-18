@@ -2,8 +2,8 @@ import file2quiz
 import regex
 
 if __name__ == '__main__':
-    blocks = [['63.', 'En una atmósfera explosiva:'], ['a', 'Siempre interviene un explosivo.'], ['b', 'No tienen por qué existir explosivos.'], ['c', 'La energía generada por la velocidad de combustión siempre da lugar'], ['a', 'una detonación.'], ['d', "blablabal"]]
-    asdas = file2quiz.parse_normalize_question(blocks, num_expected_answers=4, suggested_id=1000)
+    blocks = [['0', '1,25 g p 1'], ['g', 'p 1'], ['a', '2,5 cm3'], ['b', '2,25 cm3'], ['c', '4 cm3 ¿qué']]
+    asdas = file2quiz.parse_normalize_question(blocks, num_expected_answers=3, suggested_id=1000, single_line=False)
     exit()
     text = """
         34 ¿ this is a question!

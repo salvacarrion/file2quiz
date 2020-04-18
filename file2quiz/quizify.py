@@ -72,6 +72,7 @@ def get_block_id(block, is_question):
         b_text = m.group(3)
 
         # Normalize ID
+        b_id = regex.sub(r"^\.*", "", b_id)  # Remove leading dots
         b_id = regex.sub(r"\.*$", "", b_id)  # Remove trailing dots
         b_id = utils.remove_whitespace(b_id)  # Just in case
         b_id = b_id.lower()
@@ -358,18 +359,21 @@ def parse_questions_auto(text, num_expected_answers, single_line, *args, **kwarg
     for i, raw_question in enumerate(raw_questions, 1):
         # Split block of answers
         q_blocks = preprocess_answers_block(raw_question, single_line=single_line)
+        if q_blocks:
+            # Normalize question items
+            parsed_question = parse_normalize_question(q_blocks, num_expected_answers, i, single_line, *args, **kwargs)
 
-        # Normalize question items
-        parsed_question = parse_normalize_question(q_blocks, num_expected_answers, i, single_line, *args, **kwargs)
-
-        # Add question
-        if parsed_question:
-            question, answers = parsed_question
-            questions.append([question, answers])
+            # Add question
+            if parsed_question:
+                question, answers = parsed_question
+                questions.append([question, answers])
     return questions
 
 
 def parse_normalize_question(blocks, num_expected_answers, suggested_id, single_line, *args, **kwargs):
+    infer_question = True
+    skip_on_error = True
+
     # Remove empty lines
     q_blocks = []
     for b_id, content in blocks:
@@ -378,18 +382,23 @@ def parse_normalize_question(blocks, num_expected_answers, suggested_id, single_
 
     # Infer questions/answers
     # Join questions and answers if needed (IDs must be already normalized)
-    if single_line:
+    if not infer_question:
         new_blocks = q_blocks
-    else:
+    else: # or (num_expected_answers and len(blocks) == num_expected_answers+1)
         new_blocks = [q_blocks[0]]
         for i, (b_id, b_text) in enumerate(q_blocks[1:]):
             idx_last = len(new_blocks) - 1
+
+            # No words nor numbers
+            if not regex.search("(\p{Latin}|\d)", b_text):
+                continue
+
             if b_id is None:  # Join with previous
                 new_blocks[idx_last][1] += " " + b_text
             elif len(b_id) == 1 and string.ascii_lowercase[idx_last] != b_id:  # ej: ("a", "una casa")
                 new_blocks[idx_last][1] += f" {b_id} {b_text}"
             else:  # Correct or weird IDs (3.2a, 12.b, etc)
-                new_blocks.append([b_id, b_text])
+                new_blocks.append([b_id, b_text.strip()])
 
     # Check number of items
     if len(new_blocks) < 2+1:
@@ -397,23 +406,32 @@ def parse_normalize_question(blocks, num_expected_answers, suggested_id, single_
         return None
 
     # Check correctness
+    q_error = False
     extra_answers = []
     if num_expected_answers:
         # Too many answers
         if len(new_blocks) > num_expected_answers + 1:
+            q_error = True
             print(f"\t- [WARNING] More answers ({len(new_blocks)-1}) than expected ({num_expected_answers}). "
                   f"[Q: \"{q_summary(new_blocks[0])}\"]")
 
         # Too few answers
         elif len(new_blocks) < num_expected_answers + 1:
+            q_error = True
             # Auto-fill answers?
             missing_ans_txt = kwargs.get("fill_missing_answers")
             if missing_ans_txt:
                 num_missing_ans = (num_expected_answers + 1) - len(new_blocks)
                 extra_answers = [["z", missing_ans_txt] for _ in range(num_missing_ans)]
 
+            filling_str = f"Filling {len(extra_answers)} missing answers. " if extra_answers else ""
             print(f"\t- [WARNING] Less answers ({len(new_blocks)-1}) than expected ({num_expected_answers}). "
-                  f'Filling {len(extra_answers)} missing answers. [Q: "{q_summary(new_blocks[0])}"]')
+                  f'{filling_str}[Q: "{q_summary(new_blocks[0])}"]')
+
+    # Skip question?
+    if q_error and skip_on_error:
+        print(f"\t- [WARNING] Skipping question. [Q: \"{q_summary(new_blocks[0])}\"]")
+        return None
 
     # Add extra block
     new_blocks += extra_answers
