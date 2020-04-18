@@ -1,5 +1,4 @@
 import os
-import re
 import regex
 import string
 
@@ -51,8 +50,12 @@ def preprocess_text(text, blacklist=None, mode="auto"):
     text = utils.replace_words(text, blacklist, replace="") if blacklist else text
 
     # (Too many drawbacks) Remove breaklines for problematic non-id numbers ("el\n155 art. blablbal"
-    # pattern = regex.compile(r"(?<=\p{Latin})\n(?=\d+[ ]+\p{Latin})", re.MULTILINE)
+    # pattern = regex.compile(r"(?<=\p{Latin})\n(?=\d+[ ]+\p{Latin})", regex.MULTILINE)
     # text = regex.sub(pattern, " ", text)
+
+    # Fix answers like: (a), (  b  ), etc
+    pattern = regex.compile(r"^[\(\[]+\s*([\d\.]*[a-zA-Z]{1})\s*([\)\-\]\t ]+)", regex.MULTILINE)
+    text = regex.sub(pattern, r"\1) ", text)
 
     return text
 
@@ -80,11 +83,11 @@ def preprocess_questions_block(text):
     DELIMITER = "\n@\n@\n@\n"
 
     # Detect start of question
-    pattern = regex.compile(fr"(?<={RGX_QUESTION})([\t ]+)(?=[¿?!¡])", re.MULTILINE)
+    pattern = regex.compile(fr"(?<={RGX_QUESTION})([\t ]+)(?=[¿?!¡])", regex.MULTILINE)
     text = regex.sub(pattern, r") ", text)
 
     # Detect end of question
-    rgx_fix_question = regex.compile(fr"(?<={RGX_QUESTION})([\t ]+)(.*)(?=[?:]$|\.\.\.$)", re.MULTILINE)
+    rgx_fix_question = regex.compile(fr"(?<={RGX_QUESTION})([\t ]+)(.*)(?=[?:]$|\.\.\.$)", regex.MULTILINE)
     text = regex.sub(rgx_fix_question, r") \2", text)
 
     # Split block of questions
@@ -100,7 +103,7 @@ def preprocess_answers_block(text, single_line=False):
         raw_blocks = text.split('\n')
     else:
         # Detect start of answer
-        pattern = regex.compile(fr"(?<={RGX_ANSWER})(\. ?)(?=[\s\S])", re.MULTILINE)
+        pattern = regex.compile(fr"(?<={RGX_ANSWER})(\. ?)(?=[\s\S])", regex.MULTILINE)
         text = regex.sub(pattern, r") ", text)
 
         # Split answers

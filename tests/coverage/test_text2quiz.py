@@ -81,8 +81,8 @@ class TestQuizify(unittest.TestCase):
 
             3 Testing normalization   ???  
             a) the T    ª is   -    10 º        C  .
-            b) has <  10      mm2 and >=    -  10.0    Kg.
-            c) the discount is + 12   %
+            (b) has <  10      mm2 and >=    -  10.0    Kg.
+            ( c ) the discount is + 12   %
 
             4\t¿Testing broken question from
             1923?\t
