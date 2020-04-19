@@ -317,7 +317,7 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, num_answers=None, mo
 
     # Parse quiz
     questions = parse_questions(txt_questions, num_answers, mode, *args, **kwargs)
-    solutions = parse_solutions(txt_answers, letter2num=True) if txt_answers else None
+    solutions = parse_solutions(txt_answers, num_answers, *args, **kwargs) if txt_answers else None
 
     # Check number of questions and answers
     if solutions and len(questions) != len(solutions):
@@ -456,7 +456,7 @@ def parse_normalize_question(blocks, suggested_id):
     return question, answers
 
 
-def parse_solutions(txt, letter2num=True):
+def parse_solutions(txt, num_expected_answers=None, letter2num=True, *args, **kwargs):
     answers = []
 
     # Define regex
@@ -471,8 +471,17 @@ def parse_solutions(txt, letter2num=True):
         id_answer = id_answer.lower().strip()
         id_answer = regex.sub(r"\.*$", "", id_answer)
 
+        # Check if the correct answer is in range (a,b,c,d)
+        id_answer_num = string.ascii_lowercase.index(id_answer)
+        if num_expected_answers and id_answer_num >= num_expected_answers:
+            a_ids = string.ascii_lowercase
+            range_str = f"{a_ids[0]}-{a_ids[num_expected_answers-1]}"
+            print(f"\t- [WARNING] Skipping answer. The correct answer '{id_answer}' is not in the range of "
+                  f"possible answers ({range_str})")
+            continue
+
         # Letter to number (a => 0, b => 1, c => 2,...)
-        id_answer = string.ascii_lowercase.index(id_answer) if letter2num else id_answer
+        id_answer = id_answer_num if letter2num else id_answer
 
         # Add questions
         answers.append([id_question, id_answer])
