@@ -107,8 +107,7 @@ def preprocess_questions_block(text, length_thres=30):
             new_raw_questions[last_idx] += f"\n{q}"
 
             # Print action
-            item_summary = q.replace('\n', " ")[:100]
-            print(f"\t- [WARNING] Question too short. Inferred as answer chunk [chunk: '{item_summary}']")
+            print(f"\t- [WARNING] Question too short. Inferred as answer chunk [chunk: '{q_summary(('###', q))}']")
         else:
             new_raw_questions.append(q)
 
@@ -120,7 +119,11 @@ def preprocess_answers_block(text, single_line=False, num_expected_answers=None)
     raw_blocks = text.split('\n')
     raw_blocks = [b for b in raw_blocks if b.strip()]
 
-    if not single_line:  # auto
+    if single_line:  # auto
+        if len(raw_blocks) > num_expected_answers + 1 or len(raw_blocks) > 8:
+            print(f"\t- [WARNING] Too many answers ({len(raw_blocks)-1}). Skipping question [Q: {q_summary(('###', text))}]")
+            return None
+    else:  # auto
         DELIMITER = "\n@\n@\n@\n"
         pattern_ans = regex.compile(fr"({RGX_ANSWER})({RGX_SPLITTER}.*$)", regex.MULTILINE)
 
