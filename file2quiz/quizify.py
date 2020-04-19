@@ -371,7 +371,7 @@ def parse_questions_auto(text, num_expected_answers, single_line, *args, **kwarg
 
 
 def infer_question_blocks(blocks, single_line, num_expected_answers,
-                          infer_question=True, skip_on_error=True, *args, **kwargs):
+                          infer_question=True, skip_on_error=False, *args, **kwargs):
     # Remove empty lines
     q_blocks = []
     for b_id, content in blocks:
@@ -382,6 +382,7 @@ def infer_question_blocks(blocks, single_line, num_expected_answers,
     # Join questions and answers if needed (IDs must be already normalized)
     if single_line or not infer_question:
         new_blocks = q_blocks
+        new_blocks[0][0] = None
     else:  # or (num_expected_answers and len(blocks) == num_expected_answers+1)
         new_blocks = [q_blocks[0]]
         for i, (b_id, b_text) in enumerate(q_blocks[1:]):
