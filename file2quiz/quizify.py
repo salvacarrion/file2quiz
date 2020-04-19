@@ -360,20 +360,18 @@ def parse_questions_auto(text, num_expected_answers, single_line, *args, **kwarg
         # Split block of answers
         q_blocks = preprocess_answers_block(raw_question, single_line=single_line)
         if q_blocks:
-            # Normalize question items
-            parsed_question = parse_normalize_question(q_blocks, num_expected_answers, i, single_line, *args, **kwargs)
+            # Infer question blocks
+            q_blocks = infer_question_blocks(q_blocks, single_line, num_expected_answers, *args, **kwargs)
 
-            # Add question
-            if parsed_question:
-                question, answers = parsed_question
+            if q_blocks:
+                # Normalize question items
+                question, answers = parse_normalize_question(q_blocks, suggested_id=i)
                 questions.append([question, answers])
     return questions
 
 
-def parse_normalize_question(blocks, num_expected_answers, suggested_id, single_line, *args, **kwargs):
-    infer_question = True
-    skip_on_error = True
-
+def infer_question_blocks(blocks, single_line, num_expected_answers,
+                          infer_question=True, skip_on_error=True, *args, **kwargs):
     # Remove empty lines
     q_blocks = []
     for b_id, content in blocks:
@@ -382,17 +380,17 @@ def parse_normalize_question(blocks, num_expected_answers, suggested_id, single_
 
     # Infer questions/answers
     # Join questions and answers if needed (IDs must be already normalized)
-    if not infer_question:
+    if single_line or not infer_question:
         new_blocks = q_blocks
-    else: # or (num_expected_answers and len(blocks) == num_expected_answers+1)
+    else:  # or (num_expected_answers and len(blocks) == num_expected_answers+1)
         new_blocks = [q_blocks[0]]
         for i, (b_id, b_text) in enumerate(q_blocks[1:]):
-            idx_last = len(new_blocks) - 1
-
             # No words nor numbers
             if not regex.search("(\p{Latin}|\d)", b_text):
                 continue
 
+            # Infer blocks
+            idx_last = len(new_blocks) - 1
             if b_id is None:  # Join with previous
                 new_blocks[idx_last][1] += " " + b_text
             elif len(b_id) == 1 and string.ascii_lowercase[idx_last] != b_id:  # ej: ("a", "una casa")
@@ -401,7 +399,7 @@ def parse_normalize_question(blocks, num_expected_answers, suggested_id, single_
                 new_blocks.append([b_id, b_text.strip()])
 
     # Check number of items
-    if len(new_blocks) < 2+1:
+    if len(new_blocks) < 2 + 1:
         print(f'\t- [INFO] Block with less than two answers. Skipping block: [Q: "{q_summary(new_blocks[0])}"]')
         return None
 
@@ -412,7 +410,7 @@ def parse_normalize_question(blocks, num_expected_answers, suggested_id, single_
         # Too many answers
         if len(new_blocks) > num_expected_answers + 1:
             q_error = True
-            print(f"\t- [WARNING] More answers ({len(new_blocks)-1}) than expected ({num_expected_answers}). "
+            print(f"\t- [WARNING] More answers ({len(new_blocks) - 1}) than expected ({num_expected_answers}). "
                   f"[Q: \"{q_summary(new_blocks[0])}\"]")
 
         # Too few answers
@@ -422,10 +420,10 @@ def parse_normalize_question(blocks, num_expected_answers, suggested_id, single_
             missing_ans_txt = kwargs.get("fill_missing_answers")
             if missing_ans_txt:
                 num_missing_ans = (num_expected_answers + 1) - len(new_blocks)
-                extra_answers = [["z", missing_ans_txt] for _ in range(num_missing_ans)]
+                extra_answers = [[None, missing_ans_txt] for _ in range(num_missing_ans)]
 
             filling_str = f"Filling {len(extra_answers)} missing answers. " if extra_answers else ""
-            print(f"\t- [WARNING] Less answers ({len(new_blocks)-1}) than expected ({num_expected_answers}). "
+            print(f"\t- [WARNING] Less answers ({len(new_blocks) - 1}) than expected ({num_expected_answers}). "
                   f'{filling_str}[Q: "{q_summary(new_blocks[0])}"]')
 
     # Skip question?
@@ -435,14 +433,17 @@ def parse_normalize_question(blocks, num_expected_answers, suggested_id, single_
 
     # Add extra block
     new_blocks += extra_answers
+    return new_blocks
 
+
+def parse_normalize_question(blocks, suggested_id):
     # Normalize question
-    question = new_blocks[0]
+    question = blocks[0]
     question[0] = question[0] if question[0] else suggested_id
     question[1] = normalize_question(question[1])
 
     # Normalize answer
-    answers = new_blocks[1:]
+    answers = blocks[1:]
     for i, ans in enumerate(answers):
         ans[0] = string.ascii_lowercase[i]
         ans[1] = normalize_answer(ans[1])
