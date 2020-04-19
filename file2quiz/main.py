@@ -22,6 +22,7 @@ def main():
     parser.add_argument('--extract-bold', help="Extract bold text from the documents", default=False, action="store_true")
     parser.add_argument('--num-answers', help="Number of answers per question", default=None, type=int)
     parser.add_argument('--save-txt', help="Save quizzes in txt", default=False, action="store_true")
+    parser.add_argument('--answer-table', help="Show correct answer as a table", default=False, action="store_true")
 
     # Tesseract
     parser.add_argument('--use-ocr', help="Use an OCR to extract text from the PDFs", default=False, type=bool)
@@ -69,8 +70,8 @@ def main():
         if args.save_txt:
             input_dir = os.path.join(output_dir, "quizzes/json")
             output_dir = os.path.abspath(os.path.join(output_dir, "quizzes"))
-            file2quiz.convert_quiz(input_dir, output_dir,
-                                   file_format="text", save_files=True, show_answers=args.show_answers)
+            file2quiz.convert_quiz(input_dir, output_dir, file_format="text", save_files=True,
+                                   show_answers=args.show_answers, answer_table=args.answer_table)
 
         print("Done!")
 

@@ -5,7 +5,7 @@ import string
 from file2quiz import utils, reader
 
 
-def convert_quiz(input_dir, output_dir, file_format, save_files=False, show_answers=True):
+def convert_quiz(input_dir, output_dir, file_format, save_files=False, *args, **kwargs):
     print(f'##############################################################')
     print(f'### QUIZ CONVERTER')
     print(f'##############################################################\n')
@@ -44,7 +44,7 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False, show_answ
         total_questions += len(quiz)
 
         try:
-            fquiz = _convert_quiz(quiz, file_format, show_answers)
+            fquiz = _convert_quiz(quiz, file_format, *args, **kwargs)
         except ValueError as e:
             print(f'\t- [ERROR] {e}. Skipping quiz "{tail}"')
             continue
@@ -76,12 +76,12 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False, show_answ
     return fquizzes
 
 
-def _convert_quiz(quiz, file_format, show_answers=True):
+def _convert_quiz(quiz, file_format, *args, **kwargs):
     # Select format
     if file_format == "anki":
         return quiz2anki(quiz)
     else:  # Fallback to txt
-        return quiz2txt(quiz, show_answers)
+        return quiz2txt(quiz, *args, **kwargs)
 
 
 def pdf2image(filename, savepath, dpi=300, img_format="tiff"):
@@ -119,8 +119,9 @@ def quiz2anki(quiz):
     return text.strip()
 
 
-def quiz2txt(quiz, show_answers):
+def quiz2txt(quiz, show_answers, answer_table=False):
     txt = ""
+    txt_answers = ""
 
     # Sort questions by key
     keys = sorted(quiz.keys(), key=utils.tokenize)
@@ -132,13 +133,26 @@ def quiz2txt(quiz, show_answers):
 
         # Format answers
         for j, ans in enumerate(question['answers']):
-            is_correct = "*" if show_answers and j == question.get("correct_answer") else ""
-            txt += "{}{}) {}\n".format(is_correct, string.ascii_lowercase[j].lower(), ans)
+            marker = ""
+            ans_id = string.ascii_lowercase[j].lower()
+
+            # Show correct answer?
+            if show_answers:
+                if j == question.get("correct_answer"):  # correct answer
+                    if answer_table:
+                        txt_answers += f"{id_question} - {ans_id}\n"
+                    else:
+                        marker = "*"
+            txt += "{}{}) {}\n".format(marker, ans_id, ans)
         txt += "\n"
+
+    # Add answer table at the end of the file if requested
+    if show_answers and answer_table:
+        txt += "\n\n\n=========\n\n\n" + txt_answers
     return txt.strip()
 
 
-def json2text(path, show_correct):
+def json2text(path, *args, **kwargs):
     texts = []
     files = utils.get_files(path, extensions=".json")
     for filename in files:
@@ -146,7 +160,7 @@ def json2text(path, show_correct):
 
         # Load quiz and text
         quiz = reader.read_json(filename)
-        quiz_txt = quiz2txt(quiz, show_correct)
+        quiz_txt = quiz2txt(quiz, *args, **kwargs)
 
         texts.append((fname, quiz_txt))
     return texts
