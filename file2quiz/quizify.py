@@ -370,8 +370,12 @@ def parse_questions_auto(text, num_expected_answers, single_line, *args, **kwarg
     return questions
 
 
-def infer_question_blocks(blocks, single_line, num_expected_answers,
-                          infer_question=True, skip_on_error=False, ignore_question_key=False, *args, **kwargs):
+def infer_question_blocks(blocks, single_line, num_expected_answers, *args, **kwargs):
+    # User variables
+    infer_question = kwargs.get("infer_question", True)
+    skip_on_error = kwargs.get("skip_on_error", False)
+    ignore_question_key = kwargs.get("ignore_question_key", False)
+
     # Remove empty lines
     q_blocks = []
     for b_id, content in blocks:
