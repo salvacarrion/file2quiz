@@ -1,34 +1,21 @@
 import file2quiz
 import string
 import re
+from collections import Counter
 
-exam = file2quiz.read_txt("doodles.txt")
-lines = exam.split('\n')
+d = Counter()
+with open("doodles.txt", "r", encoding="utf8")as f:
+    file = f.read()
+    for c in file:
+        d[c]+=1
 
-exams = []
+chars = []
+for c, freq in d.most_common():
+    chars.append(c)
+    print(f"{c} - {freq}")
 
-prev_line = 0
-is_first=True
-for i, l in enumerate(lines):
-    m = re.search(r"^1\.[\- ]+", l)
-    if m:
-        if is_first:
-            is_first=False
-        else:
-            new_exam = lines[prev_line:i-6]
-            exams.append(new_exam)
-            prev_line=i-6
-
-# Add last exam
-new_exam = lines[prev_line:]
-exams.append(new_exam)
-
-path ="/Users/salvacarrion/Desktop/examples/txt"
-for i, e in enumerate(exams):
-    with open(f"{path}/Recopilación exámenes Málaga.pdf_{i}.txt", 'w', encoding="utf8") as f:
-        text = "\n".join(e)
-        text = text.replace("CORRECTOR", "=====")
-        f.write(text)
+print("Chars:" + "".join(chars))
+asdasd = 3
 
 
 
