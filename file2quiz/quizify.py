@@ -34,6 +34,10 @@ def preprocess_text(text, blacklist=None, mode="auto"):
     # Only latin characters + numbers + punctuation + whitespaces. (this also includes emojis)
     text = utils.normalize_text(text)
 
+    # Remove breaklines for problematic non-id numbers ("el\n155 art. blablbal"
+    pattern = regex.compile(r"(?<=[\p{Latin}\p{posix_punct}\t ]+)[\t ]*\n[\t ]*(?=\d+[\d\.]*[\,\;\t ]+[\p{Latin}\d]+)", regex.MULTILINE)
+    text = regex.sub(pattern, " ", text)
+
     # Strip whitespace line-by-line
     lines = [l.strip() for l in text.split('\n')]
     text = "\n".join(lines)
@@ -48,10 +52,6 @@ def preprocess_text(text, blacklist=None, mode="auto"):
 
     # Remove blacklisted words
     text = utils.replace_words(text, blacklist, replace="") if blacklist else text
-
-    # (Too many drawbacks) Remove breaklines for problematic non-id numbers ("el\n155 art. blablbal"
-    # pattern = regex.compile(r"(?<=\p{Latin})\n(?=\d+[ ]+\p{Latin})", regex.MULTILINE)
-    # text = regex.sub(pattern, " ", text)
 
     # Fix answers like: (a), (  b  ), etc
     pattern = regex.compile(r"^[\(\[]+\s*([\d\.]*[a-zA-Z]{1})\s*([\)\-\]\t ]+)", regex.MULTILINE)

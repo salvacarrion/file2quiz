@@ -10,7 +10,7 @@ ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__
 
 class TestQuizify(unittest.TestCase):
 
-    def test_quiz_parser(self):
+    def test_file2quiz(self):
         # Get paths
         input_dir = os.path.join(ROOT_DIR, "examples/raw")
         output_dir = os.path.join(ROOT_DIR, "examples")
@@ -63,7 +63,7 @@ class TestQuizify(unittest.TestCase):
             self.assertEqual(quiz.get("2").get('correct_answer'), 1)
             self.assertEqual(quiz.get("3.1").get('correct_answer'), 3)
 
-    def test_splitter(self):
+    def test_text2quiz(self):
         txt = """
             text to ignore
             text to ignore
@@ -100,7 +100,8 @@ class TestQuizify(unittest.TestCase):
             c) Example answer #3
             a this is part of the 3rd question
 
-            6.1 ))) This question is 6.1 and
+            6.1 ))) This question is 
+            6.1 and
             is quite hard :
             6.1a) Example answer #1
             6b) Example answer #2
@@ -173,4 +174,11 @@ class TestQuizify(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    # Test all
     unittest.main()
+    #
+    # # Test single test
+    # suite = unittest.TestSuite()
+    # suite.addTest(TestQuizify("test_text2quiz"))
+    # runner = unittest.TextTestRunner()
+    # runner.run(suite)
