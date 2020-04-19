@@ -35,8 +35,8 @@ def preprocess_text(text, blacklist=None, mode="auto"):
     text = utils.normalize_text(text)
 
     # Remove breaklines for problematic non-id numbers ("el\n155 art. blablabla")
-    pattern = regex.compile(r"(?<![\n\?\:]|\.\.\.)[\t ]*\n[\t ]*(?=\d+[\d\.]*[\,\; ]+)", regex.MULTILINE)
-    text = regex.sub(pattern, " ", text)
+    # pattern = regex.compile(r"(?<![\n\?\:]|\.\.\.)[\t ]*\n[\t ]*(?=\d+[\d\.]*[\,\; ]+)", regex.MULTILINE)
+    # text = regex.sub(pattern, " ", text)
 
     # Strip whitespace line-by-line
     lines = [l.strip() for l in text.split('\n')]
@@ -48,7 +48,7 @@ def preprocess_text(text, blacklist=None, mode="auto"):
         lines = [l for l in text.split('\n') if l.strip()]
         text = "\n".join(lines)
     else:
-        pass
+        text = regex.sub(r"\n{2,}", "\n\n", text)
 
     # Remove blacklisted words
     text = utils.replace_words(text, blacklist, replace="") if blacklist else text
@@ -79,37 +79,41 @@ def get_block_id(block, is_question):
         return b_id, b_text
 
 
-def preprocess_questions_block(text, length_thres=30):
-    # Define delimiters
-    DELIMITER = "\n@\n@\n@\n"
+def preprocess_questions_block(text, single_line=False, length_thres=30):
+    if single_line:
+        new_raw_questions = text.split("\n\n")
+        new_raw_questions = [q.strip() for q in new_raw_questions if len(q.strip()) > length_thres]
+    else:
+        # Define delimiters
+        DELIMITER = "\n@\n@\n@\n"
 
-    # Detect start of question
-    pattern = regex.compile(fr"(?<={RGX_QUESTION})([\t ]+)(?=[¿?!¡])", regex.MULTILINE)
-    text = regex.sub(pattern, r") ", text)
+        # Detect start of question
+        pattern = regex.compile(fr"(?<={RGX_QUESTION})([\t ]+)(?=[¿?!¡])", regex.MULTILINE)
+        text = regex.sub(pattern, r") ", text)
 
-    # Detect end of question
-    rgx_fix_question = regex.compile(fr"(?<={RGX_QUESTION})([\t ]+)(.*)(?=[?:]$|\.\.\.$)", regex.MULTILINE)
-    text = regex.sub(rgx_fix_question, r") \2", text)
+        # Detect end of question
+        rgx_fix_question = regex.compile(fr"(?<={RGX_QUESTION})([\t ]+)(.*)(?=[?:]$|\.\.\.$)", regex.MULTILINE)
+        text = regex.sub(rgx_fix_question, r") \2", text)
 
-    # Split block of questions
-    pattern = regex.compile(fr"({RGX_QUESTION})({RGX_SPLITTER}.*$)", regex.MULTILINE)
-    text = regex.sub(pattern, rf"{DELIMITER}\1\2", text)
-    raw_questions = text.split(DELIMITER)
-    raw_questions = raw_questions[1:] if raw_questions else []  # Ignore first chunk (delimiter)
+        # Split block of questions
+        pattern = regex.compile(fr"({RGX_QUESTION})({RGX_SPLITTER}.*$)", regex.MULTILINE)
+        text = regex.sub(pattern, rf"{DELIMITER}\1\2", text)
+        raw_questions = text.split(DELIMITER)
+        raw_questions = raw_questions[1:] if raw_questions else []  # Ignore first chunk (delimiter)
 
-    # Join short questions
-    new_raw_questions = []
-    for i, q in enumerate(raw_questions):
-        q = q.strip()
-        if i > 0 and len(q) < length_thres:
-            # Block too short.
-            last_idx = len(new_raw_questions) - 1
-            new_raw_questions[last_idx] += f"\n{q}"
+        # Join short questions
+        new_raw_questions = []
+        for i, q in enumerate(raw_questions):
+            q = q.strip()
+            if i > 0 and len(q) < length_thres:
+                # Block too short.
+                last_idx = len(new_raw_questions) - 1
+                new_raw_questions[last_idx] += f"\n{q}"
 
-            # Print action
-            print(f"\t- [WARNING] Question too short. Inferred as answer chunk [chunk: '{q_summary(('###', q))}']")
-        else:
-            new_raw_questions.append(q)
+                # Print action
+                print(f"\t- [WARNING] Question too short. Inferred as answer chunk [chunk: '{q_summary(('###', q))}']")
+            else:
+                new_raw_questions.append(q)
 
     return new_raw_questions
 
@@ -387,7 +391,7 @@ def parse_questions_auto(text, num_expected_answers, single_line, *args, **kwarg
     questions = []
 
     # Split questions
-    raw_questions = preprocess_questions_block(text)
+    raw_questions = preprocess_questions_block(text, single_line)
 
     # Parse questions
     for i, raw_question in enumerate(raw_questions, 1):
