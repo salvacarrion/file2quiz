@@ -79,7 +79,7 @@ def get_block_id(block, is_question):
         return b_id, b_text
 
 
-def preprocess_questions_block(text):
+def preprocess_questions_block(text, length_thres=30):
     # Define delimiters
     DELIMITER = "\n@\n@\n@\n"
 
@@ -95,22 +95,52 @@ def preprocess_questions_block(text):
     pattern = regex.compile(fr"({RGX_QUESTION})({RGX_SPLITTER}.*$)", regex.MULTILINE)
     text = regex.sub(pattern, rf"{DELIMITER}\1\2", text)
     raw_questions = text.split(DELIMITER)
-    raw_questions = [q for q in raw_questions[1:] if q.strip()] if raw_questions else []  # We can split the first chunk
-    return raw_questions
+    raw_questions = raw_questions[1:] if raw_questions else []  # Ignore first chunk (delimiter)
+
+    # Join short questions
+    new_raw_questions = []
+    for i, q in enumerate(raw_questions):
+        q = q.strip()
+        if i > 0 and len(q) < length_thres:
+            # Block too short.
+            last_idx = len(new_raw_questions) - 1
+            new_raw_questions[last_idx] += f"\n{q}"
+
+            # Print action
+            item_summary = q.replace('\n', " ")[:100]
+            print(f"\t- [WARNING] Question too short. Inferred as answer chunk [chunk: '{item_summary}']")
+        else:
+            new_raw_questions.append(q)
+
+    return new_raw_questions
 
 
-def preprocess_answers_block(text, single_line=False):
-    if single_line:
-        raw_blocks = text.split('\n')
-    else:
+def preprocess_answers_block(text, single_line=False, num_expected_answers=None):
+    # Get blocks
+    raw_blocks = text.split('\n')
+    raw_blocks = [b for b in raw_blocks if b.strip()]
+
+    if not single_line:  # auto
+        DELIMITER = "\n@\n@\n@\n"
+        pattern_ans = regex.compile(fr"({RGX_ANSWER})({RGX_SPLITTER}.*$)", regex.MULTILINE)
+
+        # Check if the answers contains IDs "a) b) c)..."
+        # Add them if there is none answer id
+        if num_expected_answers and num_expected_answers+1 == len(raw_blocks):
+            for i, item in enumerate(raw_blocks[1:]):
+                match = regex.match(pattern_ans, item)
+                if not match:
+                    raw_blocks[i+1] = f"{string.ascii_lowercase[i]}) {item}"
+
+        # Join text
+        text = "\n".join(raw_blocks)
+
         # Detect start of answer
-        pattern = regex.compile(fr"(?<={RGX_ANSWER})(\. ?)(?=[\s\S])", regex.MULTILINE)
-        text = regex.sub(pattern, r") ", text)
+        pattern_space = regex.compile(fr"(?<={RGX_ANSWER})(\. ?)(?=[\s\S])", regex.MULTILINE)
+        text = regex.sub(pattern_space, r") ", text)
 
         # Split answers
-        DELIMITER = "\n@\n@\n@\n"
-        pattern = regex.compile(fr"({RGX_ANSWER})({RGX_SPLITTER}.*$)", regex.MULTILINE)
-        stext = regex.sub(pattern, rf"{DELIMITER}\1\2", text)
+        stext = regex.sub(pattern_ans, rf"{DELIMITER}\1\2", text)
         raw_blocks = stext.split(DELIMITER)
 
     # Remove hyphens excepts if it's a number
@@ -246,6 +276,10 @@ def parse_quiz(input_dir, output_dir, blacklist_path=None, token_answer=None, nu
     quizzes_dir = os.path.join(output_dir, "quizzes/json")
     utils.create_folder(quizzes_dir) if save_files else None
 
+    # Check answer token
+    if token_answer and utils.has_regex(token_answer):
+        print("\t- [INFO] Your answer token contains regular expressions. Regex knowledge is required.")
+
     # Parse exams
     quizzes = []
     total_questions = 0
@@ -298,9 +332,6 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, num_answers=None, mo
     # Split file (questions / answers)
     txt_questions, txt_answers = text, None
     if token_answer:
-        if utils.has_regex(token_answer):
-            print("\t- [INFO] Your answer token contains regular expressions. Regex knowledge is required.")
-
         # Split section (first match)
         rxg_splitter = regex.compile(f"{token_answer}", regex.IGNORECASE | regex.MULTILINE)
         text = regex.sub(rxg_splitter, DELIMITER, text, count=1)
@@ -358,7 +389,7 @@ def parse_questions_auto(text, num_expected_answers, single_line, *args, **kwarg
     # Parse questions
     for i, raw_question in enumerate(raw_questions, 1):
         # Split block of answers
-        q_blocks = preprocess_answers_block(raw_question, single_line=single_line)
+        q_blocks = preprocess_answers_block(raw_question, single_line, num_expected_answers)
         if q_blocks:
             # Infer question blocks
             q_blocks = infer_question_blocks(q_blocks, single_line, num_expected_answers, *args, **kwargs)

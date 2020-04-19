@@ -100,8 +100,7 @@ class TestQuizify(unittest.TestCase):
             c) Example answer #3
             a this is part of the 3rd question
 
-            6.1 ))) This question is 
-            6.1 and
+            6.1 ))) This question is 6.1 and
             is quite hard :
             6.1a) Example answer #1
             6b) Example answer #2
@@ -174,11 +173,11 @@ class TestQuizify(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    # # Test single test
-    # suite = unittest.TestSuite()
-    # suite.addTest(TestQuizify("test_text2quiz"))
-    # runner = unittest.TextTestRunner()
-    # runner.run(suite)
+    # Test single test
+    suite = unittest.TestSuite()
+    suite.addTest(TestQuizify("test_text2quiz"))
+    runner = unittest.TextTestRunner()
+    runner.run(suite)
 
     # Test all
     unittest.main()
