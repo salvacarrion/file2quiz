@@ -34,8 +34,8 @@ def preprocess_text(text, blacklist=None, mode="auto"):
     # Only latin characters + numbers + punctuation + whitespaces. (this also includes emojis)
     text = utils.normalize_text(text)
 
-    # Remove breaklines for problematic non-id numbers ("el\n155 art. blablbal"
-    pattern = regex.compile(r"(?<=[\p{Latin}\p{posix_punct}\t ]+)[\t ]*\n[\t ]*(?=\d+[\d\.]*[\,\;\t ]+[\p{Latin}\d]+)", regex.MULTILINE)
+    # Remove breaklines for problematic non-id numbers ("el\n155 art. blablabla")
+    pattern = regex.compile(r"(?<![\n\?\:]|\.\.\.)[\t ]*\n[\t ]*(?=\d+[\d\.]*[\,\; ]+)", regex.MULTILINE)
     text = regex.sub(pattern, " ", text)
 
     # Strip whitespace line-by-line

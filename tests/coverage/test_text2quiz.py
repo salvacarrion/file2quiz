@@ -174,11 +174,11 @@ class TestQuizify(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    # Test all
-    unittest.main()
-    #
     # # Test single test
     # suite = unittest.TestSuite()
     # suite.addTest(TestQuizify("test_text2quiz"))
     # runner = unittest.TextTestRunner()
     # runner.run(suite)
+
+    # Test all
+    unittest.main()
