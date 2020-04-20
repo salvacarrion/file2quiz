@@ -138,6 +138,9 @@ def read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=None, empty
     savepath += f"/{parent_dir}" if parent_dir else ""
     utils.create_folder(savepath, empty_folder=empty_folder)  # Do not empty if it is part of a batch
 
+    # Preprocess images
+    # ...
+
     # Perform OCR
     converter.image2text(filename, f"{savepath}/{tail}.txt", lang, dpi, psm, oem)
 
@@ -165,9 +168,9 @@ def read_pdf_ocr(filename, output_dir, lang, dpi, psm, oem, img_format="tiff"):
 
     # Scan pages
     savepath = f"{output_dir}/scanned/{tail}"
-    #utils.create_folder(savepath)
+    utils.create_folder(savepath)
     print("\t- [INFO] Converting PDF to images...")
-    #converter.pdf2image(filename, savepath, dpi, img_format=img_format)
+    converter.pdf2image(filename, savepath, dpi, img_format=img_format)
 
     # Get files to OCR, and sort them alphabetically (tricky => [page-0, page-1, page-10, page-2,...])
     scanned_files = utils.get_files(savepath, extensions={f".{img_format}"})
