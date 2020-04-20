@@ -2,6 +2,7 @@ import re
 import os
 import shutil
 import pathlib
+from difflib import SequenceMatcher
 
 import regex
 
@@ -86,3 +87,7 @@ def remove_whitespace(text):
 def has_regex(pattern):
     metacharacters = "^[.${*(\+)|?<>"
     return any(c in pattern for c in metacharacters)
+
+
+def fuzzy_text_similarity(a, b):
+    return SequenceMatcher(None, a, b).ratio()

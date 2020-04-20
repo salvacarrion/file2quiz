@@ -1,6 +1,7 @@
 import os
 import regex
 import string
+from operator import itemgetter
 
 from file2quiz import reader
 from file2quiz import utils
@@ -34,16 +35,16 @@ def preprocess_text(text, blacklist=None, mode="auto"):
     # Only latin characters + numbers + punctuation + whitespaces. (this also includes emojis)
     text = utils.normalize_text(text)
 
-    # Remove breaklines for problematic non-id numbers ("el\n155 art. blablabla")
-    # pattern = regex.compile(r"(?<![\n\?\:]|\.\.\.)[\t ]*\n[\t ]*(?=\d+[\d\.]*[\,\; ]+)", regex.MULTILINE)
-    # text = regex.sub(pattern, " ", text)
-
     # Strip whitespace line-by-line
     lines = [l.strip() for l in text.split('\n')]
     text = "\n".join(lines)
 
     # Specific pre-processing
     if mode == "auto":
+        # Remove breaklines for problematic non-id numbers ("el\n155 art. blablabla")
+        pattern = regex.compile(r"(?<![\n\?\:]|\.\.\.)[\t ]*\n[\t ]*(?=\d+[\d\.]*[\,\; ]+)", regex.MULTILINE)
+        text = regex.sub(pattern, " ", text)
+
         # Remove empty lines
         lines = [l for l in text.split('\n') if l.strip()]
         text = "\n".join(lines)
@@ -303,7 +304,9 @@ def parse_quiz(input_dir, output_dir, blacklist_path=None, token_answer=None, nu
         txt_file = reader.read_txt(filename)
 
         # Parse txt quiz
-        quiz = parse_quiz_txt(txt_file, blacklist, token_answer, num_answers, mode, *args, **kwargs)
+        answer_fname = regex.sub(r"\.\w+\.\w+$", "", tail)
+        answers_file = os.path.join(output_dir, f"txt_selector/{answer_fname}.html_selected.txt")
+        quiz = parse_quiz_txt(txt_file, blacklist, token_answer, num_answers, mode, answers_file, *args, **kwargs)
 
         # Keep count of total questions
         total_questions += len(quiz)
@@ -329,7 +332,8 @@ def parse_quiz(input_dir, output_dir, blacklist_path=None, token_answer=None, nu
     return quizzes
 
 
-def parse_quiz_txt(text, blacklist=None, token_answer=None, num_answers=None, mode="auto", *args, **kwargs):
+def parse_quiz_txt(text, blacklist=None, token_answer=None, num_answers=None, mode="auto", answers_file=None,
+                   *args, **kwargs):
     # Preprocess text
     text = preprocess_text(text, blacklist, mode)
 
@@ -355,7 +359,17 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, num_answers=None, mo
 
     # Parse quiz
     questions = parse_questions(txt_questions, num_answers, mode, *args, **kwargs)
-    solutions = parse_solutions(txt_answers, num_answers, *args, **kwargs) if txt_answers else None
+
+    # Find answers
+    if txt_answers:
+        solutions = parse_solutions(txt_answers, num_answers, *args, **kwargs)
+    else:
+        print("\t- [INFO] Trying to find solutions using a txt selector file...")
+        solutions = find_answers_selector(questions, answers_file, blacklist, mode)
+
+    # Notify if solutions where found
+    if not solutions:
+        print("\t- [WARNING] No solutions were found")
 
     # Check number of questions and answers
     if solutions and len(questions) != len(solutions):
@@ -526,3 +540,64 @@ def parse_solutions(txt, num_expected_answers=None, letter2num=True, *args, **kw
     return answers
 
 
+def normalize_chunk(text):
+    text = utils.remove_whitespace(text)
+    text = text.lower()
+    return text.strip()
+
+
+def find_answers_selector(questions, answers_file, blacklist, mode, thres1=0.95, thres2=0.85):
+    text = None
+
+    # Check if file exists
+    try:
+        with open(answers_file, 'r', encoding='utf8') as f:
+            text = f.read()
+    except IOError as e:
+        return None
+
+    # Preprocess lines
+    text = preprocess_text(text, blacklist, mode)
+
+    lines = []
+    for bold_text in text.split('\n'):
+        # Normalize selector
+        # bold_id, bold_text = get_block_id(bold_text, is_question=True)
+
+        # Remove question
+        if bold_text.strip():
+            bold_text = normalize_chunk(bold_text)
+            lines.append(bold_text)
+
+    correct_answers = []
+    previous_line = 0
+    for q, answers in questions:
+
+        # Find question with this answer
+        scores = []
+        for li, bold_text in enumerate(lines[previous_line:]):
+
+            # Walk through question answers to find the bold text
+            ans_scores = []
+            for i, (ans_idx, ans_text) in enumerate(answers):
+                ans_text = normalize_chunk(ans_text)
+
+                score = utils.fuzzy_text_similarity(ans_text, bold_text)
+                ans_scores.append(score)
+
+            # Get max score
+            ans_idx, score = max(enumerate(ans_scores), key=itemgetter(1))
+            scores.append((ans_idx, score))
+
+            # Speed-up!!! Set checkpoint on high accuracy.
+            # I presume that answers are sorted! Try to use the same correct answer twice
+            #  e.g.: 3) b-cheese...... 59) d-cheese)
+            if score > thres1:
+                previous_line += li
+                break
+
+        # Get max score
+        ans_idx, score = max(scores, key=itemgetter(1))
+        if score > thres2:
+            correct_answers.append([q[0], ans_idx])
+    return correct_answers
