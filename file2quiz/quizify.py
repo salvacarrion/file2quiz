@@ -9,6 +9,7 @@ from file2quiz import utils
 RGX_SPLITTER = r"[\)\-\]\t ]+"  # Exclude "dots" as they can appear in the ID.
 RGX_QUESTION = r"^\d+[\d\.]*"
 RGX_ANSWER = r"^[\d\.]*[a-zA-Z]{1}"
+DELIMITER = "\n@\n@\n@\n"
 
 
 def preprocess_text(text, blacklist=None, mode="auto"):
@@ -85,9 +86,6 @@ def preprocess_questions_block(text, single_line=False, length_thres=30):
         new_raw_questions = text.split("\n\n")
         new_raw_questions = [q.strip() for q in new_raw_questions if len(q.strip()) > length_thres]
     else:
-        # Define delimiters
-        DELIMITER = "\n@\n@\n@\n"
-
         # Detect start of question
         pattern = regex.compile(fr"(?<={RGX_QUESTION})([\t ]+)(?=[¿?!¡])", regex.MULTILINE)
         text = regex.sub(pattern, r") ", text)
@@ -129,7 +127,6 @@ def preprocess_answers_block(text, single_line=False, num_expected_answers=None)
             print(f"\t- [WARNING] Too many answers ({len(raw_blocks)-1}). Skipping question [Q: {q_summary(('###', text))}]")
             return None
     else:  # auto
-        DELIMITER = "\n@\n@\n@\n"
         pattern_ans = regex.compile(fr"({RGX_ANSWER})({RGX_SPLITTER}.*$)", regex.MULTILINE)
 
         # Check if the answers contains IDs "a) b) c)..."
@@ -332,13 +329,48 @@ def parse_quiz(input_dir, output_dir, blacklist_path=None, token_answer=None, nu
     return quizzes
 
 
+def get_config(file, max_lines=10):
+    params = {}
+    last_line=0
+    sfile = file.split('\n')
+    for i, l in enumerate(sfile):
+        # Normalize (just in case)
+        l = l.lower().strip()
+
+        # Look for special chars
+        if l.startswith("#"):
+            l = l[1:]  # remove first character
+            l = l.split('=')
+            if l and len(l) == 2:
+                last_line = i
+                key, value = l
+                key = key.replace('-', '_')
+                value = int(value) if value.isnumeric() else value  # Cast integers
+
+                # Add param
+                params[key] = value
+
+        # Break if there is no config
+        if last_line != i:
+            break
+
+    # Split file from config
+    text = '\n'.join(sfile[last_line+1:])
+    return text, params
+
+
 def parse_quiz_txt(text, blacklist=None, token_answer=None, num_answers=None, mode="auto", answers_file=None,
                    *args, **kwargs):
+    # Look for user params and override
+    text, config = get_config(text)
+    if config:
+        print("\t- [INFO] File-specific params detected. Overriding user input.")
+        num_answers = config.pop("num_answers", num_answers)
+        mode = config.pop("mode", mode)
+        kwargs.update(config)
+
     # Preprocess text
     text = preprocess_text(text, blacklist, mode)
-
-    # Define delimiter
-    DELIMITER = "\n@\n@\n@\n"
 
     # Split file (questions / answers)
     txt_questions, txt_answers = text, None
