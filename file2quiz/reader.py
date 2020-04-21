@@ -164,9 +164,12 @@ def read_pdf_ocr(filename, output_dir, lang, dpi, psm, oem, img_format="tiff"):
 
     # Scan pages
     savepath = f"{output_dir}/scanned/{tail}"
-    utils.create_folder(savepath, empty_folder=True)
-    print("\t- [INFO] Converting PDF to images...")
-    converter.pdf2image(filename, savepath, dpi, img_format=img_format)
+    if os.path.exists(savepath):
+        print("\t- [INFO] Skipping scanning. The folder already exists.")
+    else:
+        utils.create_folder(savepath, empty_folder=True)
+        print("\t- [INFO] Converting PDF to images...")
+        converter.pdf2image(filename, savepath, dpi, img_format=img_format)
 
     # Get files to OCR, and sort them alphabetically (tricky => [page-0, page-1, page-10, page-2,...])
     scanned_files = utils.get_files(savepath, extensions={img_format})

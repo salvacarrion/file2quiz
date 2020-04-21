@@ -113,7 +113,7 @@ file2quiz --action text2quiz --input txt/ --token-answer "==="
 > It is quite convenient to make use of these flags: `--save-txt --show-answers` to also save 
 > the txt version of and show the correct answer.
 > To exclude certain words or patterns from the processing, you can use a text file containing one expression per line. 
-> (It supports regular expressions; check `examples/blacklist.txt)
+> (It supports regular expressions; check `examples/blacklist.txt`)
 
 
 ### Export tests
