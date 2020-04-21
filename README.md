@@ -10,16 +10,15 @@
 - **fil2quiz, text2quiz:** Parse multiple-choice tests from unstructured sources into an structured json file.
 - **quiz2text, quiz2anki:** Export json tests into a given format (text, Anki,...)
 
-**Input examples:**
-
-![](data/images/exams.jpg)
-
-
 **Formats supported:**
 ```
 ".txt", ".rtf". ".doc", ".docx", ".pdf", ".html", ".htm", ".epub"`
 ".jpg", ".jpeg", ".jfif", ".png", ".tiff", ".bmp", ".pnm",...
 ```
+
+**Input examples:**
+
+![](data/images/exams.jpg)
 
 
 ## Requirements
