@@ -19,14 +19,15 @@ def get_fname(filename):
 
 
 def get_files(path, extensions=None, sort=True):
-    # if extensions is None:
-    #     extensions = {".txt", ".pdf", ".jpg", ".jpeg", ".html"}
+    # Must receive a list, a set or a none
+    extensions = set(extensions) if extensions else extensions
 
     # Search
     valid_files = []
     files = os.listdir(path) if os.path.isdir(path) else [path]
     for filename in files:
         fname, ext = get_fname(filename)
+        ext = ext.lower().strip().replace('.', '')  # Normalize
 
         # Skip hidden files (Unix, Windows)
         if not (fname.startswith(".") or fname.startswith("~$")):
@@ -40,7 +41,7 @@ def get_files(path, extensions=None, sort=True):
     return valid_files
 
 
-def create_folder(path, empty_folder=True):
+def create_folder(path, empty_folder=False):
     basedir = os.path.basename(path)
 
     # Check output path

@@ -12,8 +12,8 @@ class TestQuizify(unittest.TestCase):
 
     def test_file2quiz(self):
         # Get paths
-        input_dir = os.path.join(ROOT_DIR, "examples/raw")
-        output_dir = os.path.join(ROOT_DIR, "examples")
+        input_dir = os.path.join(ROOT_DIR, "examples/raw/")
+        output_dir = os.path.join(ROOT_DIR, "examples/")
         blacklist_path = os.path.join(ROOT_DIR, "examples/blacklist.txt")
         token_answer = "^(===|solUtIoNs:)"  # Check case insensitivity // There are problems with this token: "==="
         extensions = {".txt", ".pdf", ".rtf", ".docx", ".html", ".png"}

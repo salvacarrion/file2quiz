@@ -1,15 +1,11 @@
 import os
-import re
-import regex
-import string
 import json
 
-from file2quiz import utils, converter, reader
+from file2quiz import utils, converter
 
 from io import StringIO
 from bs4 import BeautifulSoup
 from tika import parser as tp
-import cssutils
 
 
 def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang="eng", dpi=300, psm=3, oem=3, save_files=False,
@@ -22,15 +18,15 @@ def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang
     files = utils.get_files(input_dir, extensions)
 
     # Get blacklist
-    blacklist = reader.read_blacklist(blacklist_path)
+    blacklist = read_blacklist(blacklist_path)
 
     # Create output dir
     txt_dir = os.path.join(output_dir, "txt")
-    utils.create_folder(txt_dir) if save_files else None
+    utils.create_folder(txt_dir, empty_folder=True) if save_files else None
 
     # Create output dir (selector)
     txt_selector_dir = os.path.join(output_dir, "txt_selector")
-    utils.create_folder(txt_selector_dir) if save_files and extract_bold else None
+    utils.create_folder(txt_selector_dir, empty_folder=True) if save_files and extract_bold else None
 
     # Extract text
     extracted_texts = []  # list of tuples (text, filename)
@@ -130,7 +126,7 @@ def save_quiz(quiz, filename):
     return save_json(quiz, filename)
 
 
-def read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=None, empty_folder=True):
+def read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=None, empty_folder=False):
     basedir, tail = os.path.split(filename)
 
     # Save path
@@ -168,12 +164,12 @@ def read_pdf_ocr(filename, output_dir, lang, dpi, psm, oem, img_format="tiff"):
 
     # Scan pages
     savepath = f"{output_dir}/scanned/{tail}"
-    utils.create_folder(savepath)
+    utils.create_folder(savepath, empty_folder=True)
     print("\t- [INFO] Converting PDF to images...")
     converter.pdf2image(filename, savepath, dpi, img_format=img_format)
 
     # Get files to OCR, and sort them alphabetically (tricky => [page-0, page-1, page-10, page-2,...])
-    scanned_files = utils.get_files(savepath, extensions={f".{img_format}"})
+    scanned_files = utils.get_files(savepath, extensions={img_format})
     scanned_files.sort(key=utils.tokenize)
 
     # Perform OCR on the scanned pages

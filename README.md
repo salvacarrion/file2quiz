@@ -4,15 +4,11 @@
 
 **file2quiz** is a text processing utility to extract multiple-choice questions from unstructured sources, among other things.
 
-
 **Functions:**
 
 - **file2text:** Extract text information from a variety of file formats such as JPEG, PNG, PDFs, DOCX, HTML, etc.
 - **fil2quiz, text2quiz:** Parse multiple-choice tests from unstructured sources into an structured json file.
 - **quiz2text, quiz2anki:** Export json tests into a given format (text, Anki,...)
-- **txt2text:** *(not yet implemented)* Fix a broken text. This post-processing step is usually needed after an OCR.
-    - e.g.: `thiss€nctence1sbr0ken => This sentence is broken`
-
 
 **Formats supported:**
 ```
@@ -25,7 +21,12 @@
 
 - [Python 3.7+](https://www.python.org/downloads/)
 
-To enable the OCR functionality, you also need:
+
+### Enabling OCR functionality
+
+To enable the Optical Character Recognition of images and PDFs,
+you need to install `ImageMagick` and `Tesseract` along with the
+language in which you want to perform the recognition.
 
 On Ubuntu/Debian:
 
@@ -40,6 +41,35 @@ On MacOS:
 brew install imagemagick
 brew install tesseract --all-languages
 ```
+
+### Bold text extraction
+
+It's pretty common that multiple-choice question tests mark the correct answer in bold
+instead of using a simple table. Therefore, if we extract the bold fragments, we can use them
+to perform a similarity matching with the answers from our parsed test to find the correct solution.
+
+Currently, we can extract bold information from HTML and Word (*.docx) documents.
+
+
+#### Extracting bold text from an HTML document
+
+To enable the extraction of bold text from an HTML document, 
+you need to install [ChromeDriver](https://chromedriver.chromium.org/). 
+We use it along with Selenium to render the document since the
+font-weight is nowadays, usually set through CSS instead of the deprecated bold tag `<b>`.
+ 
+Moreover, if we were to use only these tags, that would mean to miss many bold fragments.
+
+
+#### Extracting bold text from an Word document
+
+To enable the extraction of bold text from an Word document,
+you need to install Word on a Windows machine in addiction to the 
+`pywin32` python package.
+
+```
+pip install pywin32
+``` 
 
 
 ## Installation
@@ -94,8 +124,6 @@ file2quiz --action quiz2text --input quizzes/json/
 file2quiz --action quiz2anki --input quizzes/json/
 ```
 
-> By the default, it searches in the folder `quizzes/json/` for tests to process. 
-
 
 ### Extract text from files
 
@@ -104,8 +132,6 @@ To extract the text of a file (or all the files in a directory), type:
 ```
 file2quiz --action file2text --input raw/
 ```
-
-> By the default, it searches in the folder `raw/` for files to process. 
 
 
 ## Example
@@ -157,7 +183,7 @@ Now we have the text extracted. However, what we have here is an unstructured tx
 To parse this txt file into a structured format like json, we type:
 
 ```
-file2quiz --action text2quiz --token-answer "^(===|solutions:)"
+ file2quiz --action text2quiz --input txt/ --token-answer "^(===|solutions:)"
 ```
 
 > `--token-answer` is the token used here to to split the questions and answers, and it's case insensitive.
@@ -168,7 +194,7 @@ file2quiz --action text2quiz --token-answer "^(===|solutions:)"
 This gave us a json file. If we want read its content, have to convert it to a text file
 
 ```
-file2quiz --action quiz2text --show-answers
+file2quiz --action quiz2text --input quizzes/json/ --show-answers
 ```
 
 Output:
@@ -196,22 +222,23 @@ c) No, but that would be awesome!
 Now that we have check that our file is correct, we can convert it to anki typing:
 
 ```
-file2quiz --action quiz2anki
+file2quiz --action quiz2anki --input quizzes/json/
 ```
 
-### More options
+### Additional information
 
 To view all the available options, type `file2quiz --help` in the terminal:
 
 ```
 usage: file2quiz [-h]
                  [--action {file2quiz,file2text,text2quiz,quiz2text,quiz2anki}]
-                 [--input INPUT] [--output OUTPUT] [--mode {auto,single-line}]
-                 [--blacklist BLACKLIST] [--token-answer TOKEN_ANSWER]
-                 [--show-answers]
+                 [--input INPUT] [--output OUTPUT] [--blacklist BLACKLIST]
+                 [--extract-bold] [--mode {auto,single-line}]
+                 [--token-answer TOKEN_ANSWER] [--show-answers]
                  [--fill-missing-answers FILL_MISSING_ANSWERS]
-                 [--num-answers NUM_ANSWERS] [--save-txt] [--use-ocr USE_OCR]
-                 [--lang LANG] [--dpi DPI] [--psm PSM] [--oem OEM]
+                 [--num-answers NUM_ANSWERS] [--save-txt] [--answer-table]
+                 [--use-ocr USE_OCR] [--lang LANG] [--dpi DPI] [--psm PSM]
+                 [--oem OEM]
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -219,11 +246,12 @@ optional arguments:
                         Actions to perform
   --input INPUT         Input file or directory
   --output OUTPUT       Output file or directory
-  --mode {auto,single-line}
-                        Mode used to detect questions
   --blacklist BLACKLIST
                         Blacklist file with the excluded words or patterns
                         (regex)
+  --extract-bold        Extract bold text from the documents
+  --mode {auto,single-line}
+                        Mode used to detect questions
   --token-answer TOKEN_ANSWER
                         (regex) Token used to split the file between questions
                         and answers
@@ -233,9 +261,30 @@ optional arguments:
   --num-answers NUM_ANSWERS
                         Number of answers per question
   --save-txt            Save quizzes in txt
+  --answer-table        Show correct answer as a table
   --use-ocr USE_OCR     Use an OCR to extract text from the PDFs
   --lang LANG           [Tesseract] Specify language(s) used for OCR
   --dpi DPI             [Tesseract] Specify DPI for input image
   --psm PSM             [Tesseract] Specify page segmentation mode
   --oem OEM             [Tesseract] Specify OCR Engine mode
+```
+
+We can set many of these options directly into the txt to parse, by 
+prefixing them with a hash (`#`) character at the top of the document.
+This will override the flags set on the command-line.
+
+Example:
+
+```
+#mode=single-line
+#num_answers=3
+
+typical multiple-choice tests
+
+question 1:
+ans1
+ans2
+ans3
+
+...
 ```

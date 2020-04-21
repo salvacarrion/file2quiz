@@ -272,14 +272,14 @@ def parse_quiz(input_dir, output_dir, blacklist_path=None, token_answer=None, nu
     print(f'##############################################################\n')
 
     # Get files
-    files = utils.get_files(input_dir, extensions={'.txt'})
+    files = utils.get_files(input_dir, extensions={'txt'})
 
     # Get blacklist
     blacklist = reader.read_blacklist(blacklist_path)
 
     # Create quizzes folder
     quizzes_dir = os.path.join(output_dir, "quizzes/json")
-    utils.create_folder(quizzes_dir) if save_files else None
+    utils.create_folder(quizzes_dir, empty_folder=True) if save_files else None
 
     # Check answer token
     if token_answer and utils.has_regex(token_answer):

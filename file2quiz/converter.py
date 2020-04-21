@@ -1,5 +1,4 @@
 import os
-import shutil
 import string
 
 from file2quiz import utils, reader
@@ -11,11 +10,11 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False, *args, **
     print(f'##############################################################\n')
 
     # Get files
-    files = utils.get_files(input_dir, extensions={'.json'})
+    files = utils.get_files(input_dir, extensions={'json'})
 
     # Create quizzes folder
-    convert_dir = os.path.join(output_dir, file_format)
-    utils.create_folder(convert_dir) if save_files else None
+    convert_dir = os.path.join(output_dir, f"quizzes/{file_format}")
+    utils.create_folder(convert_dir, empty_folder=True) if save_files else None
 
     # Set format
     FILE_FORMATS = {"text": "txt", "anki": "txt"}
@@ -154,7 +153,7 @@ def quiz2txt(quiz, show_answers, answer_table=False):
 
 def json2text(path, *args, **kwargs):
     texts = []
-    files = utils.get_files(path, extensions=".json")
+    files = utils.get_files(path, extensions="json")
     for filename in files:
         fname, extension = os.path.splitext(os.path.basename(filename))
 
@@ -198,11 +197,11 @@ def pdf2word(input_dir, output_dir):
         raise ImportError("'pywin32' missing. You need to install it manually (only Windows): pip install pywin32")
 
     # Get files
-    files = utils.get_files(input_dir, extensions={".pdf"})
+    files = utils.get_files(input_dir, extensions={"pdf"})
 
     # Create output dir
     output_dir = os.path.join(output_dir, "docx-word")
-    utils.create_folder(output_dir)
+    utils.create_folder(output_dir, empty_folder=True)
 
     # Load word client
     word_client = win32com.client.Dispatch("Word.Application")
