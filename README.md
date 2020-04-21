@@ -10,6 +10,11 @@
 - **fil2quiz, text2quiz:** Parse multiple-choice tests from unstructured sources into an structured json file.
 - **quiz2text, quiz2anki:** Export json tests into a given format (text, Anki,...)
 
+**Input examples:**
+
+![](data/images/exams.jpg)
+
+
 **Formats supported:**
 ```
 ".txt", ".rtf". ".doc", ".docx", ".pdf", ".html", ".htm", ".epub"`
@@ -170,7 +175,7 @@ d ]] Yes, but only for text files
 3.4d.-Yes, like: "WORD1TODELETE" or "pattern1", "pattern123"
 ```
 
-First need to to extract its text by typing:
+First need to extract its text by typing:
 
 ```
 file2quiz --action file2text --input raw/demo.pdf --output .
