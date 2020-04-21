@@ -21,7 +21,7 @@ def main():
     parser.add_argument('--mode', help="Mode used to detect questions", choices=QUESTION_MODES, default=QUESTION_MODES[0])
     parser.add_argument('--token-answer', help="(regex) Token used to split the file between questions and answers", default=None)
     parser.add_argument('--show-answers', help="Show correct answer", default=False, action="store_true")
-    parser.add_argument('--fill-missing-answers', help="Texto used to fill missing answers", default=None)
+    parser.add_argument('--fill-missing-answers', help="Text used to fill missing answers", default=None)
     parser.add_argument('--num-answers', help="Number of answers per question", default=None, type=int)
     parser.add_argument('--save-txt', help="Save quizzes in txt", default=False, action="store_true")
     parser.add_argument('--answer-table', help="Show correct answer as a table", default=False, action="store_true")

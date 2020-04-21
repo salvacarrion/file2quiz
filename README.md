@@ -273,18 +273,18 @@ We can set many of these options directly into the txt to parse, by
 prefixing them with a hash (`#`) character at the top of the document.
 This will override the flags set on the command-line.
 
-Example:
+**Example:**
 
 ```
 #mode=single-line
 #num_answers=3
 
-typical multiple-choice tests
+Typical multiple-choice tests
 
-question 1:
-ans1
-ans2
-ans3
+1. question one:
+ans one
+ans two
+ans three
 
 ...
 ```
