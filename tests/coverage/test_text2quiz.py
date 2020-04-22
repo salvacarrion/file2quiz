@@ -69,6 +69,11 @@ class TestQuizify(unittest.TestCase):
             text to ignore
             text to ignore
 
+            8. La temperatura mínima que un objeto puede alcanzar es de: 
+                
+                a. - 273,15 ºC 
+                b. +273,15  º K 
+                c. - 215,58 ºF 
 
             1---- -2 degrees is the...
             a\t1
@@ -122,23 +127,25 @@ class TestQuizify(unittest.TestCase):
             1-A 2.b
             3    // C
             4 b 5A,(6.1b)
-            7.c
+            7.c 8a
+            
             """
 
         # Parse quiz
         quizzes = file2quiz.parse_quiz_txt(txt, token_answer="===")
 
         # General checks
-        self.assertEqual(len(quizzes), 7)  # Num. questions
+        self.assertEqual(len(quizzes), 8)  # Num. questions
 
         # Check question IDs
-        self.assertTrue(quizzes.get("1").get('id') == "1")
-        self.assertTrue(quizzes.get("2").get('id') == "2")
-        self.assertTrue(quizzes.get("3").get('id') == "3")
-        self.assertTrue(quizzes.get("4").get('id') == "4")
-        self.assertTrue(quizzes.get("5").get('id') == "5")
-        self.assertTrue(quizzes.get("6.1").get('id') == "6.1")
-        self.assertTrue(quizzes.get("7").get('id') == "7")
+        self.assertIsNotNone(quizzes.get("1"))
+        self.assertIsNotNone(quizzes.get("2"))
+        self.assertIsNotNone(quizzes.get("3"))
+        self.assertIsNotNone(quizzes.get("4"))
+        self.assertIsNotNone(quizzes.get("5"))
+        self.assertIsNotNone(quizzes.get("6.1"))
+        self.assertIsNotNone(quizzes.get("7"))
+        self.assertIsNotNone(quizzes.get("8"))
 
         # Check question answers
         self.assertEqual(len(quizzes.get("1").get('answers')), 3)
@@ -148,6 +155,7 @@ class TestQuizify(unittest.TestCase):
         self.assertEqual(len(quizzes.get("5").get('answers')), 3)
         self.assertEqual(len(quizzes.get("6.1").get('answers')), 3)
         self.assertEqual(len(quizzes.get("7").get('answers')), 4)
+        self.assertEqual(len(quizzes.get("8").get('answers')), 3)
 
         # Check question lengths (characters)
         self.assertTrue(quizzes.get("1").get('answers')[0] == "1")
@@ -160,7 +168,12 @@ class TestQuizify(unittest.TestCase):
         self.assertTrue(quizzes.get("3").get('answers')[2] == "The discount is +12%")
 
         self.assertTrue(quizzes.get("5").get('answers')[2] == "Example answer #3 a this is part of the 3rd question")
+
         self.assertTrue(quizzes.get("7").get('answers')[2] == "More answers 3 e do not confuse with a answer id")
+
+        self.assertTrue(quizzes.get("8").get('answers')[0] == "-273,15ºC")
+        self.assertTrue(quizzes.get("8").get('answers')[1] == "+273,15ºK")
+        self.assertTrue(quizzes.get("8").get('answers')[2] == "-215,58ºF")
 
         # Check correct answers
         self.assertEqual(quizzes.get("1").get('correct_answer'), 0)
@@ -170,6 +183,7 @@ class TestQuizify(unittest.TestCase):
         self.assertEqual(quizzes.get("5").get('correct_answer'), 0)
         self.assertEqual(quizzes.get("6.1").get('correct_answer'), 1)
         self.assertEqual(quizzes.get("7").get('correct_answer'), 2)
+        self.assertEqual(quizzes.get("8").get('correct_answer'), 0)
 
 
 if __name__ == '__main__':

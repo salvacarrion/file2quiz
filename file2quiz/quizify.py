@@ -6,9 +6,9 @@ from operator import itemgetter
 from file2quiz import reader
 from file2quiz import utils
 
-RGX_SPLITTER = r"[\.\)\-\]\t ]*[\.\)\-\]\t]+" #r"[\)\-\]\t ]+"  # Exclude "dots" as they can appear in the ID.
-RGX_QUESTION = r"^\d+" #r"^\d+[\d\.]*"
-RGX_ANSWER = r"^[\d\.]*[a-zA-Z]{1}"
+RGX_SPLITTER = r"[ ]*[\.\)\-\]\t]+" #r"[\)\-\]\t ]+"  # Exclude "dots" as they can appear in the ID.
+RGX_QUESTION = r"^[\(\[ ]*?\d+[\d+\.]*"
+RGX_ANSWER = r"^[\(\[ ]*?[\d+\.]*[a-zA-Z]{1}"
 DELIMITER = "\n@\n@\n@\n"
 
 
@@ -56,15 +56,17 @@ def preprocess_text(text, blacklist=None, mode="auto"):
     text = utils.replace_words(text, blacklist, replace="") if blacklist else text
 
     # Fix answers like: (a), (  b  ), etc
-    pattern = regex.compile(r"^[\(\[]+\s*([\d\.]*[a-zA-Z]{1})\s*([\)\-\]\t ]+)", regex.MULTILINE)
-    text = regex.sub(pattern, r"\1) ", text)
+    # pattern = regex.compile(r"^[\(\[]+\s*([\d\.]*[a-zA-Z]{1})\s*([\)\-\]\t ]+)", regex.MULTILINE)
+    # text = regex.sub(pattern, r"\1) ", text)
 
     return text
 
 
 def get_block_id(block, is_question):
+    block = block.replace('\n', ' ')  # Remove break lines (this regex has problems with it)
+
     ID_RGX = RGX_QUESTION if is_question else RGX_ANSWER
-    pattern = regex.compile(fr"^({ID_RGX})({RGX_SPLITTER}?)(.*$)")
+    pattern = regex.compile(fr"^({ID_RGX})({RGX_SPLITTER}?)(.*)")
     m = regex.search(pattern, block)
 
     if not m:
@@ -87,7 +89,7 @@ def preprocess_questions_block(text, single_line=False, length_thres=30):
         new_raw_questions = [q.strip() for q in new_raw_questions if len(q.strip()) > length_thres]
     else:
         # Detect start of question
-        pattern = regex.compile(fr"(?<={RGX_QUESTION})([\t ]+)(?=[¿?!¡])", regex.MULTILINE)
+        pattern = regex.compile(fr"(?<={RGX_QUESTION})([\t ]+)(?=[¿]+)", regex.MULTILINE)
         text = regex.sub(pattern, r") ", text)
 
         # Detect end of question
@@ -100,11 +102,17 @@ def preprocess_questions_block(text, single_line=False, length_thres=30):
         raw_questions = text.split(DELIMITER)
         raw_questions = raw_questions[1:] if raw_questions else []  # Ignore first chunk (delimiter)
 
+        # Look potential answers detected as questions => 12a, 23.3abu
+        pattern_semians = regex.compile(fr"({RGX_ANSWER})", regex.MULTILINE)
+
         # Join short questions
         new_raw_questions = []
         for i, q in enumerate(raw_questions):
             q = q.strip()
-            if i > 0 and len(q) < length_thres:
+            if regex.match(pattern_semians, q):  # 6.1a, 5.3b
+                last_idx = len(new_raw_questions) - 1
+                new_raw_questions[last_idx] += f"\n{q}"
+            elif i > 0 and len(q) < length_thres:
                 # Block too short.
                 last_idx = len(new_raw_questions) - 1
                 new_raw_questions[last_idx] += f"\n{q}"
@@ -115,6 +123,17 @@ def preprocess_questions_block(text, single_line=False, length_thres=30):
                 new_raw_questions.append(q)
 
     return new_raw_questions
+
+
+def split_id_from_text(item, is_question):
+    b_id, content = get_block_id(item, is_question)
+    # Remove punctuation and whispaces except last character
+    content_clean = regex.sub(r"^([\p{posix_punct}\s]*)(?=[\p{posix_punct}])", '', content)
+    # Remove the rest of the punctuation except if it is a set of special character
+    content_clean = regex.sub(r"^([\p{posix_punct}\s]*)(?=[\-\+\¿¡\"\'<>=]|>=|<=|==|\p{Latin})", '', content_clean)
+    # Remove minus and pluses if it's not a number
+    content_clean = regex.sub(r"^([\-\+]*)(?! *\d)", '', content_clean)  # Remove hyphens
+    return b_id, content_clean
 
 
 def preprocess_answers_block(text, single_line=False, num_expected_answers=None):
@@ -141,8 +160,8 @@ def preprocess_answers_block(text, single_line=False, num_expected_answers=None)
         text = "\n".join(raw_blocks)
 
         # Detect start of answer
-        pattern_space = regex.compile(fr"(?<={RGX_ANSWER})(\. ?)(?=[\s\S])", regex.MULTILINE)
-        text = regex.sub(pattern_space, r") ", text)
+        # pattern_space = regex.compile(fr"(?<={RGX_ANSWER})(\. ?)(?=[\s\S])", regex.MULTILINE)
+        # text = regex.sub(pattern_space, r") ", text)
 
         # Split answers
         stext = regex.sub(pattern_ans, rf"{DELIMITER}\1\2", text)
@@ -151,15 +170,9 @@ def preprocess_answers_block(text, single_line=False, num_expected_answers=None)
     # Remove hyphens excepts if it's a number
     blocks_cleaned = []
     for i, b in enumerate(raw_blocks):
-        b_id, content = get_block_id(utils.remove_whitespace(b), is_question=bool(i == 0))
-        # Remove punctuation and whispaces except last character
-        content_clean = regex.sub(r"^([\p{posix_punct}\s]*)(?=[\p{posix_punct}])", '', content)
-        # Remove the rest of the punctuation except if it is a set of special character
-        content_clean = regex.sub(r"^([\p{posix_punct}\s]*)(?=[\-\+\¿¡\"\'<>=]|>=|<=|==|\p{Latin})", '', content_clean)
-        # Remove minus and pluses if it's not a number
-        content_clean = regex.sub(r"^([\-\+]*)(?=\D)", '', content_clean)  # Remove hyphens
-        if content_clean.strip():
-            blocks_cleaned.append((b_id, content_clean))
+        b_id, content = split_id_from_text(b, is_question=bool(i == 0))
+        if content.strip():
+            blocks_cleaned.append((b_id, content))
     return blocks_cleaned
 
 
@@ -216,19 +229,19 @@ def normalize_generic(text, sentence_case=True):
 
     # Other number signs (>, <, >=, <=)
     rgx_percentage = regex.compile(r"(?<=<|<=|>|>=)(\s*)(?=[\+|\-]?\d+)", regex.IGNORECASE | regex.MULTILINE)
-    text = regex.sub(rgx_percentage, '', text)
+    text = regex.sub(rgx_percentage, r'', text)
 
     # Percentage
-    rgx_percentage = regex.compile(r"(?<=\d+)(\s*)%(\s*)(?!\w)", regex.IGNORECASE | regex.MULTILINE)
-    text = regex.sub(rgx_percentage, '%', text)
+    rgx_percentage = regex.compile(r"(\d+) *%", regex.IGNORECASE | regex.MULTILINE)
+    text = regex.sub(rgx_percentage, r'\1%', text)
 
     # Temperature 1
-    rgx_temp = regex.compile(r"(?<=\d+)(\s*)º(\s*)C(?!\w)", regex.IGNORECASE|regex.MULTILINE)
-    text = regex.sub(rgx_temp, 'ºC', text)
+    rgx_temp = regex.compile(r"(\d+) *º *([CKF])", regex.IGNORECASE|regex.MULTILINE)
+    text = regex.sub(rgx_temp, r'\1º\2', text)
 
     # Temperature 2
-    rgx_temp = regex.compile(r"(\s*)T(\s*)ª(?!\w)", regex.IGNORECASE|regex.MULTILINE)
-    text = regex.sub(rgx_temp, ' Tª', text)
+    rgx_temp = regex.compile(r" +T *ª", regex.MULTILINE)
+    text = regex.sub(rgx_temp, r' Tª', text)
     return text.strip()
 
 
