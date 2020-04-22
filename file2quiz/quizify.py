@@ -89,12 +89,12 @@ def preprocess_questions_block(text, single_line=False, length_thres=30):
         new_raw_questions = [q.strip() for q in new_raw_questions if len(q.strip()) > length_thres]
     else:
         # Detect start of question
-        pattern = regex.compile(fr"(?<={RGX_QUESTION})([\t ]+)(?=[¿]+)", regex.MULTILINE)
-        text = regex.sub(pattern, r") ", text)
-
-        # Detect end of question
-        rgx_fix_question = regex.compile(fr"(?<={RGX_QUESTION})([\t ]+)(.*)(?=[?:]$|\.\.\.$)", regex.MULTILINE)
-        text = regex.sub(rgx_fix_question, r") \2", text)
+        # pattern = regex.compile(fr"(?<={RGX_QUESTION})([\t ]+)(?=[¿]+)", regex.MULTILINE)
+        # text = regex.sub(pattern, r") ", text)
+        #
+        # # Detect end of question
+        # rgx_fix_question = regex.compile(fr"(?<={RGX_QUESTION})([\t ]+)(.*)(?=[?:]$|\.\.\.$)", regex.MULTILINE)
+        # text = regex.sub(rgx_fix_question, r") \2", text)
 
         # Split block of questions
         pattern = regex.compile(fr"({RGX_QUESTION})({RGX_SPLITTER}.*$)", regex.MULTILINE)
@@ -614,7 +614,7 @@ def normalize_chunk(text, remove_id=False):
     return text.strip()
 
 
-def find_answers_selector(questions, answers_file, blacklist, mode, thres1=0.95, thres2=0.85):
+def find_answers_selector(questions, answers_file, blacklist, mode, thres1=0.90, thres2=0.75):
     text = None
 
     # Check if file exists
