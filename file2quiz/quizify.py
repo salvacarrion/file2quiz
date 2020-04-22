@@ -6,8 +6,8 @@ from operator import itemgetter
 from file2quiz import reader
 from file2quiz import utils
 
-RGX_SPLITTER = r"[\)\-\]\t ]+"  # Exclude "dots" as they can appear in the ID.
-RGX_QUESTION = r"^\d+[\d\.]*"
+RGX_SPLITTER = r"[\.\)\-\]\t ]*[\.\)\-\]\t]+" #r"[\)\-\]\t ]+"  # Exclude "dots" as they can appear in the ID.
+RGX_QUESTION = r"^\d+" #r"^\d+[\d\.]*"
 RGX_ANSWER = r"^[\d\.]*[a-zA-Z]{1}"
 DELIMITER = "\n@\n@\n@\n"
 
@@ -42,9 +42,9 @@ def preprocess_text(text, blacklist=None, mode="auto"):
 
     # Specific pre-processing
     if mode == "auto":
-        # Remove breaklines for problematic non-id numbers ("el\n155 art. blablabla")
-        pattern = regex.compile(r"(?<![\n\?\:]|\.\.\.)[\t ]*\n[\t ]*(?=\d+[\d\.]*[\,\; ]+)", regex.MULTILINE)
-        text = regex.sub(pattern, " ", text)
+        # # Remove breaklines for problematic non-id numbers ("el\n155 art. blablabla")
+        # pattern = regex.compile(r"(?<![\n\?\:]|\.\.\.)[\t ]*\n[\t ]*(?=\d+[\d\.]*[\,\; ]+)", regex.MULTILINE)
+        # text = regex.sub(pattern, " ", text)
 
         # Remove empty lines
         lines = [l for l in text.split('\n') if l.strip()]
@@ -245,12 +245,18 @@ def build_quiz(questions, solutions=None):
     # Add questions
     for q in questions:
         question, answers = q
-        quiz[question[0]] = {
-            'id': question[0],
-            'question': question[1],
-            'answers': [ans[1] for ans in answers],
-            'correct_answer': None
-        }
+        q_id = question[0]
+
+        # Look for collitions
+        if q_id not in quiz:
+            quiz[q_id] = {
+                'id': question[0],
+                'question': question[1],
+                'answers': [ans[1] for ans in answers],
+                'correct_answer': None
+            }
+        else:
+            print(f"\t- [WARNING] Question ID collition. [Q: {q_summary(question)}")
 
     # Add answers
     if solutions:
@@ -392,12 +398,22 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, num_answers=None, mo
     # Parse quiz
     questions = parse_questions(txt_questions, num_answers, mode, *args, **kwargs)
 
-    # Find answers
-    if txt_answers:
-        solutions = parse_solutions(txt_answers, num_answers, *args, **kwargs)
-    else:
+    # Find answers (txt
+    solutions_txt = parse_solutions(txt_answers, num_answers, *args, **kwargs)
+
+    # Find answers (selector)
+    solutions_sel = []
+    if answers_file and os.path.exists(answers_file):
         print("\t- [INFO] Trying to find solutions using a txt selector file...")
-        solutions = find_answers_selector(questions, answers_file, blacklist, mode)
+        solutions_sel = find_answers_selector(questions, answers_file, blacklist, mode)
+
+    # Merge solutions
+    # Although there can be collitions, they should be exclusive, unless manual editing (priority)
+    # solutions_txt = {k: v for k, v in solutions_txt}
+    # solutions_sel = {k: v for k, v in solutions_sel}
+    # solutions = solutions_sel
+    # solutions.update(solutions_sel)  # The solutions from the txt have priority
+    solutions = solutions_txt + solutions_sel
 
     # Notify if solutions where found
     if not solutions:
@@ -543,6 +559,10 @@ def parse_normalize_question(blocks, suggested_id):
 def parse_solutions(txt, num_expected_answers=None, letter2num=True, *args, **kwargs):
     answers = []
 
+    # Check if there is something in the txt
+    if not txt:
+        return answers
+
     # Define regex
     rgx_solutions = regex.compile(r'\b(\d+[\d\.]*?)[\W\s]*([a-zA-Z]{1})(?!\w)', regex.MULTILINE)
     solutions = regex.findall(rgx_solutions, txt)
@@ -572,9 +592,12 @@ def parse_solutions(txt, num_expected_answers=None, letter2num=True, *args, **kw
     return answers
 
 
-def normalize_chunk(text):
+def normalize_chunk(text, remove_id=False):
+    text = normalize_answer(text)
     text = utils.remove_whitespace(text)
     text = text.lower()
+    if remove_id:
+        b_id, text = get_block_id(text, is_question=False)  # Remove answer id
     return text.strip()
 
 
@@ -598,7 +621,7 @@ def find_answers_selector(questions, answers_file, blacklist, mode, thres1=0.95,
 
         # Remove question
         if bold_text.strip():
-            bold_text = normalize_chunk(bold_text)
+            bold_text = normalize_chunk(bold_text, remove_id=True)
             lines.append(bold_text)
 
     correct_answers = []
@@ -606,30 +629,33 @@ def find_answers_selector(questions, answers_file, blacklist, mode, thres1=0.95,
     for q, answers in questions:
 
         # Find question with this answer
-        scores = []
+        line_ans_score = []
         for li, bold_text in enumerate(lines[previous_line:]):
-
             # Walk through question answers to find the bold text
-            ans_scores = []
+            scores = []
             for i, (ans_idx, ans_text) in enumerate(answers):
-                ans_text = normalize_chunk(ans_text)
+                # This answers have no IDs, and we don't want to remove parts of the answer
+                ans_text = normalize_chunk(ans_text, remove_id=False)
 
                 score = utils.fuzzy_text_similarity(ans_text, bold_text)
-                ans_scores.append(score)
+                scores.append(score)
 
-            # Get max score
-            ans_idx, score = max(enumerate(ans_scores), key=itemgetter(1))
-            scores.append((ans_idx, score))
+            # Get answer with maximum score for this bold line
+            ans_idx, ans_score = max(enumerate(scores), key=itemgetter(1))
+            line_ans_score.append((ans_idx, ans_score, bold_text))
 
             # Speed-up!!! Set checkpoint on high accuracy.
             # I presume that answers are sorted! Try to use the same correct answer twice
             #  e.g.: 3) b-cheese...... 59) d-cheese)
-            if score > thres1:
+            if ans_score > thres1:
                 previous_line += li
                 break
 
         # Get max score
-        ans_idx, score = max(scores, key=itemgetter(1))
+        ans_idx, score, bold_text = max(line_ans_score, key=itemgetter(1))
         if score > thres2:
             correct_answers.append([q[0], ans_idx])
+        else:
+            print(f"\t- [INFO] Answer discarted (prob.: {int(score*100)}%) [B: '{bold_text[:50]}'; A: '{q_summary(answers[ans_idx])}'; Q: '{q_summary(q)}';]")
+            asdsd = 33
     return correct_answers
