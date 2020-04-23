@@ -307,6 +307,7 @@ def parse_quiz(input_dir, output_dir, blacklist_path=None, token_answer=None, nu
     # Parse exams
     quizzes = []
     total_questions = 0
+    total_answers = 0
     for i, filename in enumerate(files, 1):
         tail, basedir = utils.get_tail(filename)
         fname, ext = utils.get_fname(filename)
@@ -325,13 +326,15 @@ def parse_quiz(input_dir, output_dir, blacklist_path=None, token_answer=None, nu
         quiz = parse_quiz_txt(txt_file, blacklist, token_answer, num_answers, mode, answers_file, *args, **kwargs)
 
         # Keep count of total questions
+        solutions = sum([1 for q_id, q in quiz.items() if q.get('correct_answer') is not None])
+        total_answers += solutions
         total_questions += len(quiz)
         quizzes.append((quiz, filename))
 
         # Show info
         if len(quiz) == 0:
             print(f"\t- [WARNING] No quizzes were found ({tail})")
-        print(f"\t- [INFO] Parsing done! {len(quiz)} questions were found. ({tail})")
+        print(f"\t- [INFO] Parsing done! {len(quiz)} questions were found; {solutions} with solutions. ({tail})")
 
         # Save quizzes
         if save_files:
@@ -343,7 +346,7 @@ def parse_quiz(input_dir, output_dir, blacklist_path=None, token_answer=None, nu
     print("SUMMARY")
     print("--------------------------------------------------------------")
     print(f"- [INFO] Documents parsed: {len(quizzes)}")
-    print(f"- [INFO] Questions found: {total_questions}")
+    print(f"- [INFO] Questions found: {total_questions} (with solutions: {total_answers})")
     print("--------------------------------------------------------------\n\n")
     return quizzes
 
@@ -418,7 +421,8 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, num_answers=None, mo
     solutions_sel = []
     if answers_file and os.path.exists(answers_file):
         print("\t- [INFO] Trying to find solutions using a txt selector file...")
-        solutions_sel = find_answers_selector(questions, answers_file, blacklist, mode)
+        # If we use the blacklist file, we could delete parts of a question
+        solutions_sel = find_answers_selector(questions, answers_file, None, mode)
 
     # Merge solutions
     # Although there can be collitions, they should be exclusive, unless manual editing (priority)
@@ -614,7 +618,7 @@ def normalize_chunk(text, remove_id=False):
     return text.strip()
 
 
-def find_answers_selector(questions, answers_file, blacklist, mode, thres1=0.90, thres2=0.75):
+def find_answers_selector(questions, answers_file, blacklist, mode, thres1=0.90, thres2=0.75, max_jump=10):
     text = None
 
     # Check if file exists
@@ -640,9 +644,9 @@ def find_answers_selector(questions, answers_file, blacklist, mode, thres1=0.90,
     correct_answers = []
     previous_line = 0
     for q, answers in questions:
-
         # Find question with this answer
         line_ans_score = []
+        skip_question = False
         for li, bold_text in enumerate(lines[previous_line:]):
             # Walk through question answers to find the bold text
             scores = []
@@ -664,11 +668,20 @@ def find_answers_selector(questions, answers_file, blacklist, mode, thres1=0.90,
                 previous_line += li
                 break
 
+            # If an answer is missing, we don't go to look to further
+            if li >= max_jump and previous_line != 0:
+                skip_question = True
+                break
+
+        # Skip question
+        if skip_question:
+            print(f"\t [WARNING] Skipping answer. Max jump exceeded ({max_jump} lines). [Q: '{q_summary(q)}']")
+            continue
+
         # Get max score
         ans_idx, score, bold_text = max(line_ans_score, key=itemgetter(1))
         if score > thres2:
             correct_answers.append([q[0], ans_idx])
         else:
             print(f"\t- [INFO] Answer discarted (prob.: {int(score*100)}%) [B: '{bold_text[:50]}'; A: '{q_summary(answers[ans_idx])}'; Q: '{q_summary(q)}';]")
-            asdsd = 33
     return correct_answers
