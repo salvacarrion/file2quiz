@@ -29,6 +29,7 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False, *args, **
     # Convert quizzes
     fquizzes = []
     total_questions = 0
+    total_answers = 0
     for i, filename in enumerate(files, 1):
         tail, basedir = utils.get_tail(filename)
         fname, ext = utils.get_fname(filename)
@@ -40,6 +41,8 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False, *args, **
 
         # Read file
         quiz = reader.read_json(filename)
+        solutions = sum([1 for q_id, q in quiz.items() if q.get('correct_answer') is not None])
+        total_answers += solutions
         total_questions += len(quiz)
 
         try:
@@ -54,7 +57,7 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False, *args, **
         # Show info
         if len(fquiz.strip()) == 0:
             print(f"\t- [WARNING] No quiz were found ({tail})")
-        print(f"\t- [INFO] Converting to '{file_format}' done! ({tail})")
+        print(f"\t- [INFO] Conversion done! {len(quiz)} questions were found; {solutions} with solutions. ({tail})")
 
         # Save quizzes
         if save_files:
@@ -70,7 +73,7 @@ def convert_quiz(input_dir, output_dir, file_format, save_files=False, *args, **
     print("SUMMARY")
     print("--------------------------------------------------------------")
     print(f"- [INFO] Quizzes converted: {len(fquizzes)}")
-    print(f"- [INFO] Questions found: {total_questions}")
+    print(f"- [INFO] Questions found: {total_questions} (with solutions: {total_answers})")
     print("--------------------------------------------------------------\n\n")
     return fquizzes
 

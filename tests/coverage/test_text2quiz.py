@@ -87,7 +87,7 @@ class TestQuizify(unittest.TestCase):
             3. Testing normalization   ???  
             a) the T    ª is   -    10 º        C  .
             (b) has <  10      mm2 and >=    -  10.0    Kg.
-            ( c ) the discount is + 12   %
+            ( c ) the "discount" is + 12   %
 
             4\t¿Testing broken question from
             1923?\t
@@ -165,7 +165,7 @@ class TestQuizify(unittest.TestCase):
         self.assertTrue(quizzes.get("3").get('question') == "Testing normalization?")
         self.assertTrue(quizzes.get("3").get('answers')[0] == "The Tª is -10ºC")
         self.assertTrue(quizzes.get("3").get('answers')[1] == "Has <10mm2 and >=-10.0Kg")
-        self.assertTrue(quizzes.get("3").get('answers')[2] == "The discount is +12%")
+        self.assertTrue(quizzes.get("3").get('answers')[2] == "The \"discount\" is +12%")
 
         self.assertTrue(quizzes.get("5").get('answers')[2] == "Example answer #3 a this is part of the 3rd question")
 

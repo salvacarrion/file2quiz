@@ -31,6 +31,7 @@ def preprocess_text(text, blacklist=None, mode="auto"):
         .replace('…', '...') \
         .replace('€)', 'c)') \
         .replace('©', 'c)') \
+        .replace('·º', 'º') \
         .replace('\ufeff', '')
 
     # Only latin characters + numbers + punctuation + whitespaces. (this also includes emojis)
@@ -109,10 +110,12 @@ def preprocess_questions_block(text, single_line=False, length_thres=30):
         new_raw_questions = []
         for i, q in enumerate(raw_questions):
             q = q.strip()
+            q_id, content = get_block_id(q, is_question=True)
+
             if regex.match(pattern_semians, q):  # 6.1a, 5.3b
                 last_idx = len(new_raw_questions) - 1
                 new_raw_questions[last_idx] += f"\n{q}"
-            elif i > 0 and len(q) < length_thres:
+            elif i > 0 and len(content) < length_thres:  # eg.: 50.000
                 # Block too short.
                 last_idx = len(new_raw_questions) - 1
                 new_raw_questions[last_idx] += f"\n{q}"
@@ -178,7 +181,7 @@ def preprocess_answers_block(text, single_line=False, num_expected_answers=None)
 
 def normalize_question(text, sentence_case=True):
     # Remove space before quotation mark or colons
-    text = regex.sub(r"([\s,;:\-\.\?\"\']*)([\?:\"\'])(\s*)$", r"\2", text)
+    text = regex.sub(r"([\s,;:\-\.\?]*)([\?:])(\s*)$", r"\2", text)
 
     # Generic normalization
     text = normalize_generic(text, sentence_case)
@@ -216,8 +219,8 @@ def normalize_generic(text, sentence_case=True):
     text = regex.sub(r"(?<=\p{Latin}+)([\-\u2012\u2013\u2014\u2015\u2053]+\s+)(?=\p{Latin}+)", '', text)
 
     # Remove space before/after a parentheses, quotation mark, etc
-    text = regex.sub(r"(?<=[\(\[\{\¿\¡\"\']+)(\s+)", '', text)
-    text = regex.sub(r"(\s+)(?=[\)\]\}\?\!\"\'\,\.]+)", '', text)
+    text = regex.sub(r"(?<=[\(\[\{\¿\¡]+)(\s+)", '', text)
+    text = regex.sub(r"(\s+)(?=[\)\]\}\?\!\,\.]+)", '', text)
 
     # Metric rules (remove ampere "a" to avoid problems)
     rgx_metrics = regex.compile(r"(?<=\d+)(\s*)(?=(K|H|D|Da|d|c|m)?(m|s|g|hz|w|v|k|t|min|h|n|Pa|bar)(2|3|²|³)?(?!\p{Latin}))", regex.IGNORECASE|regex.MULTILINE)
@@ -443,10 +446,16 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, num_answers=None, mo
         sol_ids = set([str(sol[0]) for sol in solutions])
 
         # Get differences
-        missing_questions = sol_ids - q_ids
-        missing_ans = q_ids - sol_ids
+        missing_questions = list(sol_ids - q_ids)
+        missing_ans = list(q_ids - sol_ids)
+
+        # Sort IDs
+        missing_questions.sort(key=utils.tokenize)
+        missing_ans.sort(key=utils.tokenize)
+
+        # Convert to string (prettify)
         missing_questions_str = ", ".join(missing_questions)
-        missing_ans_str = ", ".join(list(missing_ans))
+        missing_ans_str = ", ".join(missing_ans)
 
         print(f"\t- [WARNING] The number of questions ({len(questions)}) and solutions ({len(solutions)}) do not match")
         print(f"\t\t- Questions missing ({len(missing_questions)}): [{missing_questions_str}]")
@@ -675,7 +684,7 @@ def find_answers_selector(questions, answers_file, blacklist, mode, thres1=0.90,
 
         # Skip question
         if skip_question:
-            print(f"\t [WARNING] Skipping answer. Max jump exceeded ({max_jump} lines). [Q: '{q_summary(q)}']")
+            print(f"\t [WARNING] Skipping answer (might be missing). Max jump exceeded ({max_jump} lines). [Q: '{q_summary(q)}']")
             continue
 
         # Get max score
