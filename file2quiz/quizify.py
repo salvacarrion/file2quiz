@@ -7,8 +7,8 @@ from file2quiz import reader
 from file2quiz import utils
 
 RGX_SPLITTER = r"[ ]*[\.\)\-\]\t]+" #r"[\)\-\]\t ]+"  # Exclude "dots" as they can appear in the ID.
-RGX_QUESTION = r"^[\(\[ ]*?\d+[\d+\.]*"
-RGX_ANSWER = r"^[\(\[ ]*?[\d+\.]*[a-zA-Z]{1}"
+RGX_QUESTION = r"^[\(\[ ]*(?:\d+\.)*\d+"
+RGX_ANSWER = r"^[\(\[ ]*?(?:(?:\d+\.)*\d+)*[a-zA-Z]{1}"
 DELIMITER = "\n@\n@\n@\n"
 
 
@@ -468,9 +468,9 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, num_answers=None, mo
 
 def parse_questions(txt, num_expected_answers=None, mode="auto", *args, **kwargs):
     if mode == "auto":
-        return parse_questions_auto(txt, num_expected_answers, single_line=False)
+        return parse_questions_auto(txt, num_expected_answers, single_line=False, **kwargs)
     elif mode == "single-line":
-        return parse_questions_auto(txt, num_expected_answers, single_line=True)
+        return parse_questions_auto(txt, num_expected_answers, single_line=True , **kwargs)
     else:
         raise ValueError(f"Unknown question mode: '{mode}'")
 

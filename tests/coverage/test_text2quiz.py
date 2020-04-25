@@ -69,18 +69,12 @@ class TestQuizify(unittest.TestCase):
             text to ignore
             text to ignore
 
-            8. La temperatura mínima que un objeto puede alcanzar es de: 
-                
-                a. - 273,15 ºC 
-                b. +273,15  º K 
-                c. - 215,58 ºF 
-
-            1---- -2 degrees is the...
+            1-----2 degrees is the...
             a\t1
             b.1.2
             c-------1.3 negative number
 
-            2. Missing one answer and id:
+            2.Missing one answer and id:
             a) Example answer #1
             b) Example answer #2
 
@@ -121,6 +115,13 @@ class TestQuizify(unittest.TestCase):
             e do not confuse with a answer id
             d) Last answer
             a nd this neither
+            
+            8. La temperatura mínima que un objeto puede alcanzar es de: 
+                
+                a. - 273,15 ºC 
+                b. +273,15  º K 
+                c. - 215,58 ºF 
+
 
             ===
 
