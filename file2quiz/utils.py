@@ -20,14 +20,16 @@ def get_fname(filename):
 
 def get_files(path, extensions=None, sort=True):
     # Must receive a list, a set or a none
-    extensions = set(extensions) if extensions else extensions
+    if extensions:
+        extensions = set(extensions)
+        extensions = {ext.strip().lower().replace('.', '') for ext in extensions}  # Normalize
 
     # Search
     valid_files = []
     files = os.listdir(path) if os.path.isdir(path) else [path]
     for filename in files:
         fname, ext = get_fname(filename)
-        ext = ext.lower().strip().replace('.', '')  # Normalize
+        ext = ext.strip().lower().replace('.', '')  # Normalize
 
         # Skip hidden files (Unix, Windows)
         if not (fname.startswith(".") or fname.startswith("~$")):

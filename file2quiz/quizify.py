@@ -287,7 +287,7 @@ def build_quiz(questions, solutions=None):
     return quiz
 
 
-def parse_quiz(input_dir, output_dir, blacklist_path=None, token_answer=None, num_answers=None, mode="auto",
+def parse_quiz(input_dir, output_dir, token_answer=None, num_answers=None, mode="auto",
                save_files=False, *args, **kwargs):
     print(f'##############################################################')
     print(f'### QUIZ PARSER')
@@ -297,7 +297,7 @@ def parse_quiz(input_dir, output_dir, blacklist_path=None, token_answer=None, nu
     files = utils.get_files(input_dir, extensions={'txt'})
 
     # Get blacklist
-    blacklist = reader.read_blacklist(blacklist_path)
+    blacklist = reader.read_blacklist(os.path.join(output_dir, "blacklist.txt"))
 
     # Create quizzes folder
     quizzes_dir = os.path.join(output_dir, "quizzes/json")

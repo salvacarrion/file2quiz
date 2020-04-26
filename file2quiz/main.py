@@ -13,8 +13,7 @@ def main():
     parser.add_argument('--output', help="Output file or directory", default=None)
 
     # Extract text
-    parser.add_argument('--blacklist', help="Blacklist file with the excluded words or patterns (regex)", default=None)
-    parser.add_argument('--extract-bold', help="Extract bold text from the documents", default=False, action="store_true")
+    parser.add_argument('--extract-style', help="Extract a specific font style from the document", default=None)
 
     # Quizzes
     QUESTION_MODES = ["auto", "single-line"]
@@ -28,7 +27,9 @@ def main():
 
     # Tesseract
     parser.add_argument('--use-ocr', help="Use an OCR to extract text from the PDFs", default=False, action="store_true")
-    parser.add_argument('--lang', help="[Tesseract] Specify language(s) used for OCR", default="eng")
+    parser.add_argument('--disable-preprocessing', help="Disable preprocessing for OCR", default=True, action="store_false")
+    parser.add_argument('--deskew', help="Corrects the rotation of the documents", default=False, action="store_true")
+    parser.add_argument('--lang', help="[Tesseract] Specify language(s) used for OCR", default=None)
     parser.add_argument('--dpi', help="[Tesseract] Specify DPI for input image", default=300, type=int)
     parser.add_argument('--psm', help="[Tesseract] Specify page segmentation mode", default=3, type=int)
     parser.add_argument('--oem', help="[Tesseract] Specify OCR Engine mode", default=3, type=int)
@@ -36,36 +37,29 @@ def main():
     args = parser.parse_args()
     input_dir = os.path.abspath(args.input) if args.input else os.path.abspath(os.path.join(os.getcwd()))
     output_dir = os.path.abspath(args.output) if args.output else os.path.abspath(os.path.join(os.getcwd()))
-    blacklist_path = os.path.abspath(args.blacklist) if args.blacklist else os.path.abspath(os.path.join(os.getcwd(), "blacklist.txt"))
 
     # Minor format
+    kwargs = vars(args)
     args.action = args.action.lower().strip() if isinstance(args.action, str) else None
     if args.action == "file2text":
         # Extract text
-        file2quiz.extract_text(input_dir, output_dir, blacklist_path, args.use_ocr, args.lang, args.dpi, args.psm, args.oem,
-                               extract_bold=args.extract_bold,
-                               save_files=True)
+        file2quiz.extract_text(input_dir, output_dir, save_files=True, **kwargs)
 
     elif args.action in {"file2quiz", "text2quiz"}:
         # Parse raw files
         if args.action == "file2quiz":
-            file2quiz.extract_text(input_dir, output_dir, blacklist_path,
-                                   args.use_ocr, args.lang, args.dpi, args.psm, args.oem,
-                                   extract_bold=args.extract_bold, save_files=True)
+            file2quiz.extract_text(input_dir, output_dir, save_files=True, **kwargs)
             input_dir = os.path.join(output_dir, "txt")
         elif args.action == "text2quiz":
             pass
 
         # Parse quizzes
-        file2quiz.parse_quiz(input_dir, output_dir, blacklist_path, args.token_answer, args.num_answers,
-                             mode=args.mode, save_files=True,
-                             fill_missing_answers=args.fill_missing_answers)
+        file2quiz.parse_quiz(input_dir, output_dir, save_files=True, **kwargs)
 
         # Convert to txt
         if args.save_txt:
             _input_dir = os.path.join(output_dir, "quizzes/json")
-            file2quiz.convert_quiz(_input_dir, output_dir, file_format="text", save_files=True,
-                                   show_answers=args.show_answers, answer_table=args.answer_table)
+            file2quiz.convert_quiz(_input_dir, output_dir, file_format="text", save_files=True, **kwargs)
 
     elif args.action in {"quiz2text", "quiz2anki"}:
         # Select format
@@ -73,8 +67,7 @@ def main():
             file_format = "anki"
         else:
             file_format = "text"
-        file2quiz.convert_quiz(input_dir, output_dir, file_format=file_format, save_files=True,
-                               show_answers=args.show_answers)
+        file2quiz.convert_quiz(input_dir, output_dir, file_format=file_format, save_files=True, **kwargs)
 
     else:
         parser.print_help()

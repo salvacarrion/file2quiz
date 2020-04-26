@@ -86,13 +86,13 @@ def _convert_quiz(quiz, file_format, *args, **kwargs):
         return quiz2txt(quiz, *args, **kwargs)
 
 
-def pdf2image(filename, savepath, dpi=300, img_format="tiff"):
+def pdf2image(filename, savepath, dpi=300, img_format="tiff", **kwargs):
     # This requires: ImageMagick
     cmd = f'convert -density {dpi} "{filename}" -depth 8 -strip -background white -alpha off "{savepath}/page-%0d.{img_format}"'
     os.system(cmd)
 
 
-def image2text(filename, savepath, lang="eng", dpi=300, psm=3, oem=3):
+def image2text(filename, savepath, lang="eng", dpi=300, psm=3, oem=3, **kwargs):
     # This requires: Tesseract
     # Tesseract needs the save path without the extensions
     basedir, tail = os.path.split(savepath)
@@ -103,7 +103,7 @@ def image2text(filename, savepath, lang="eng", dpi=300, psm=3, oem=3):
     os.system(cmd)
 
 
-def quiz2anki(quiz):
+def quiz2anki(quiz, **kwargs):
     text = ""
 
     # Sort questions by key
@@ -121,7 +121,7 @@ def quiz2anki(quiz):
     return text.strip()
 
 
-def quiz2txt(quiz, show_answers, answer_table=False):
+def quiz2txt(quiz, show_answers, answer_table=False, **kwargs):
     txt = ""
     txt_answers = ""
 

@@ -6,10 +6,10 @@ from file2quiz import utils, converter
 from io import StringIO
 from bs4 import BeautifulSoup
 from tika import parser as tp
+from file2quiz import preprocess
 
 
-def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang="eng", dpi=300, psm=3, oem=3, save_files=False,
-                 extensions=None, extract_bold=None, *args, **kwargs):
+def extract_text(input_dir, output_dir, save_files=False, extensions=None, *args, **kwargs):
     print(f'##############################################################')
     print(f'### TEXT EXTRACTION')
     print(f'##############################################################\n')
@@ -18,7 +18,7 @@ def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang
     files = utils.get_files(input_dir, extensions)
 
     # Get blacklist
-    blacklist = read_blacklist(blacklist_path)
+    blacklist = read_blacklist(os.path.join(output_dir, "blacklist.txt"))
 
     # Create output dir
     txt_dir = os.path.join(output_dir, "txt")
@@ -26,7 +26,7 @@ def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang
 
     # Create output dir (selector)
     txt_selector_dir = os.path.join(output_dir, "txt_selector")
-    utils.create_folder(txt_selector_dir, empty_folder=True) if save_files and extract_bold else None
+    utils.create_folder(txt_selector_dir, empty_folder=True) if save_files and kwargs.get("extract_style") else None
 
     # Extract text
     extracted_texts = []  # list of tuples (text, filename)
@@ -38,8 +38,7 @@ def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang
         print(f'==============================================================')
 
         # Read file
-        text, text_selected = read_file(filename, output_dir, use_ocr, lang, dpi, psm, oem,
-                                        extract_bold=extract_bold, *args, **kwargs)
+        text, text_selected = read_file(filename, output_dir, *args, **kwargs)
 
         # Remove blacklisted words
         text = utils.replace_words(text, blacklist, replace="")
@@ -57,7 +56,7 @@ def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang
             print(f"\t- [INFO] Saving file... ({tail}.txt)")
             save_txt(text, os.path.join(txt_dir, f"{tail}.txt"))
 
-            if extract_bold and text_selected:
+            if kwargs.get("extract_style") and text_selected:
                 save_txt(text_selected, os.path.join(txt_selector_dir, f"{tail}_selected.txt"))
 
     print("")
@@ -69,7 +68,7 @@ def extract_text(input_dir, output_dir, blacklist_path=None, use_ocr=False, lang
     return extracted_texts
 
 
-def read_file(filename, output_dir, use_ocr, lang, dpi, psm, oem, *args, **kwargs):
+def read_file(filename, output_dir, *args, **kwargs):
     text, text_selected = None, None
 
     # Get path values
@@ -81,14 +80,14 @@ def read_file(filename, output_dir, use_ocr, lang, dpi, psm, oem, *args, **kwarg
     if extension in {".txt"}:
         text = read_txt(filename)
     elif extension in {".pdf"}:
-        txt_pages = read_pdf(filename, output_dir, use_ocr, lang, dpi, psm, oem)
+        txt_pages = read_pdf(filename, output_dir, **kwargs)
         text = "\n\n".join(txt_pages)
     elif extension in {".jpg", ".jpeg", ".jfif", ".png", ".tiff", ".bmp", ".pnm"}:
-        text = read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=tail)
+        text = read_image(filename, output_dir, parent_dir=tail, **kwargs)
     elif extension in {".html", ".htm"}:
-        text, text_selected = read_html(filename, *args, **kwargs)
+        text, text_selected = read_html(filename, extract_style=kwargs.get("extract_style"))
     elif extension in {".doc", ".docx"}:
-        text, text_selected = read_docx(filename, *args, **kwargs)
+        text, text_selected = read_docx(filename, extract_style=kwargs.get("extract_style"))
     elif extension in {".rtf"}:
         text = _read_tika(filename)
     else:
@@ -98,7 +97,7 @@ def read_file(filename, output_dir, use_ocr, lang, dpi, psm, oem, *args, **kwarg
     return text, text_selected  # Must be a list of string
 
 
-def read_txt(filename):
+def read_txt(filename, **kwargs):
     with open(filename, 'r', encoding="utf8") as f:
         return f.read()
 
@@ -126,30 +125,44 @@ def save_quiz(quiz, filename):
     return save_json(quiz, filename)
 
 
-def read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=None, empty_folder=False):
+def read_image(filename, output_dir, parent_dir=None, empty_folder=False, preprocess_img=True, **kwargs):
     basedir, tail = os.path.split(filename)
+    fname, ext = utils.get_fname(tail)
 
-    # Save path
-    savepath = f"{output_dir}/ocr"
-    savepath += f"/{parent_dir}" if parent_dir else ""
-    utils.create_folder(savepath, empty_folder=empty_folder)  # Do not empty if it is part of a batch
+    # Create OCR-preprocessed folder
+    if preprocess_img:
+        ocr_savepath = f"{output_dir}/ocr/preprocessed"
+        ocr_savepath += f"/{parent_dir}" if parent_dir else ""
+        utils.create_folder(ocr_savepath, empty_folder=empty_folder)  # Do not empty if it is part of a batch
 
-    # Preprocess images
-    # ...
+        # Preprocess image
+        filename_clean = os.path.join(ocr_savepath, f"{fname}.tiff")
+        if not os.path.exists(filename_clean):
+            print(f"\t- [INFO] Preprocessing image...")
+            filename_clean = preprocess.preprocess_img_file(filename, savepath=filename_clean, **kwargs)
+    else:
+        filename_clean = filename
+
+    # Create OCR folder
+    ocr_savepath = f"{output_dir}/ocr/txt"
+    ocr_savepath += f"/{parent_dir}" if parent_dir else ""
+    utils.create_folder(ocr_savepath, empty_folder=empty_folder)  # Do not empty if it is part of a batch
 
     # Perform OCR
-    converter.image2text(filename, f"{savepath}/{tail}.txt", lang, dpi, psm, oem)
+    converter.image2text(filename_clean, f"{ocr_savepath}/{tail}.txt", **kwargs)
 
     # Read file
-    text = read_txt(filename=f"{savepath}/{tail}.txt")
+    text = read_txt(filename=f"{ocr_savepath}/{tail}.txt")
     return text
 
 
-def read_pdf(filename, output_dir, use_ocr, lang, dpi, psm, oem, min_char=200):
+def read_pdf(filename, output_dir, use_ocr=False, min_char=200, **kwargs):
     if use_ocr:
-        return read_pdf_ocr(filename, output_dir, lang, dpi, psm, oem)
+        if kwargs.get("lang") is None:
+            raise ValueError("A language is required to perform the OCR")
+        return read_pdf_ocr(filename, output_dir, **kwargs)
     else:
-        pages = read_pdf_text(filename)
+        pages = read_pdf_text(filename, **kwargs)
         # Check number of characters
         total_chars = sum([len(p.strip()) for p in pages if isinstance(p, str)])
         if total_chars < min_char:
@@ -158,33 +171,33 @@ def read_pdf(filename, output_dir, use_ocr, lang, dpi, psm, oem, min_char=200):
         return pages
 
 
-def read_pdf_ocr(filename, output_dir, lang, dpi, psm, oem, img_format="tiff"):
+def read_pdf_ocr(filename, output_dir, **kwargs):
     pages_txt = []
     basedir, tail = os.path.split(filename)
 
     # Scan pages
-    savepath = f"{output_dir}/scanned/{tail}"
+    savepath = f"{output_dir}/ocr/scanned/{tail}"
     if os.path.exists(savepath):
         print("\t- [INFO] Skipping scanning. The folder already exists.")
     else:
         utils.create_folder(savepath, empty_folder=True)
         print("\t- [INFO] Converting PDF to images...")
-        converter.pdf2image(filename, savepath, dpi, img_format=img_format)
+        converter.pdf2image(filename, savepath, **kwargs)
 
     # Get files to OCR, and sort them alphabetically (tricky => [page-0, page-1, page-10, page-2,...])
-    scanned_files = utils.get_files(savepath, extensions={img_format})
+    scanned_files = utils.get_files(savepath, extensions={'.tiff'})
     scanned_files.sort(key=utils.tokenize)
 
     # Perform OCR on the scanned pages
     for i, filename in enumerate(scanned_files, 1):
         print("\t- [INFO] Performing OCR {} of {}".format(i, len(scanned_files)))
-        text = read_image(filename, output_dir, lang, dpi, psm, oem, parent_dir=tail, empty_folder=False)
+        text = read_image(filename, output_dir,  parent_dir=tail, empty_folder=False, **kwargs)
         pages_txt.append(text)
 
     return pages_txt
 
 
-def read_pdf_text(filename):
+def read_pdf_text(filename, **kwargs):
     pages_txt = []
 
     # Read PDF file
@@ -212,8 +225,8 @@ def _read_tika(filename, *args, **kargs):
     return text
 
 
-def read_html(filename, extract_bold=None, *args, **kwargs):
-    if not extract_bold:
+def read_html(filename, extract_style=None, **kwargs):
+    if not extract_style:
         return _read_tika(filename), None
     else:
         from selenium import webdriver
@@ -228,23 +241,24 @@ def read_html(filename, extract_bold=None, *args, **kwargs):
         driver.get("file://" + filename)
 
         # Get all text
-        text = driver.find_element(By.CSS_SELECTOR, "*").text
+        text_all = driver.find_element(By.CSS_SELECTOR, "*").text
 
         # Walk through all the elements
-        text_selector = []
+        text_bold = []
         for elem in driver.find_elements(By.CSS_SELECTOR, "*"):
             elem_text = utils.remove_whitespace(str(elem.text))
             if elem_text:
-                # Really slow
-                is_bold = int(elem.value_of_css_property('font-weight')) >= 700
-                if is_bold:
-                    text_selector.append(elem_text)
+                if extract_style == "bold":
+                    # Really slow
+                    is_bold = int(elem.value_of_css_property('font-weight')) >= 700
+                    if is_bold:
+                        text_bold.append(elem_text)
 
         # Close driver
         driver.quit()
 
-        text_selector = "\n".join(text_selector).strip()
-        return text, text_selector
+        text_bold = "\n".join(text_bold).strip()
+        return text_all, text_bold
 
 
 def _aux_selector(xhtml_data, *args, **kwargs):
@@ -286,11 +300,16 @@ def read_rtf(filename):
     return _read_tika(filename)
 
 
-def read_docx(filename, extract_bold=None):
-    if not extract_bold:
+def read_docx(filename, extract_style=None):
+    if not extract_style:
         return _read_tika(filename), None
     else:
-        from docx import Document  # Problems with "from collections import Sequence" (deprecated)
+
+        try:
+            from docx import Document  # Problems with "from collections import Sequence" (deprecated)
+        except ImportError as e:
+            print("\t- [ERROR] You need to install 'pywin32'")
+            exit()
         document = Document(filename)
         text_all = []
         text_bold = []
@@ -301,7 +320,7 @@ def read_docx(filename, extract_bold=None):
 
             # Get bold text
             # Not all bold paragraphs are mark as "bold" neither runs (check both)
-            if extract_bold and text.strip():
+            if extract_style and text.strip():
                 if p.style.font.bold:  # Whole paragraph is bold
                     text_bold.append(text)
                 else:  # Walk through chunks

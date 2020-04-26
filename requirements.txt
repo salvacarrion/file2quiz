@@ -5,3 +5,5 @@ lxml==4.5.0
 #pywin32==227  # To convert PDFs to Docx
 selenium>=3.141.0
 scikit-image>=0.16.2
+deskew==0.10.2
+opencv-python-headless==4.2.0.34
