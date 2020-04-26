@@ -83,7 +83,7 @@ def get_angle_text(img, method="hough", limit=5.0, step=1.0):
             angle = angle % 90
             angle -= 90
         if abs(angle) > 5:
-            print("\t- [WARNING] Ignoring rotation. Maximum angle exceeded ({:.2f}º > +-{:2.f}º)".format(angle, limit))
+            print("\t- [WARNING] Ignoring rotation. Maximum angle exceeded ({:.2f}º > +-{:.2f}º)".format(angle, limit))
             angle = 0.0
         return angle
     elif method == "projection":
