@@ -27,35 +27,32 @@ def preprocess_img_file(filename, savepath, crop=None, dpi=300, *args, **kwargs)
     return savepath
 
 
-def image_cleaner(img, crop=None, deskew=False, shave_margin=(0.05, 0.05), **kwargs):
+def image_cleaner(img, crop=None, deskew=False, **kwargs):
     # Crop
     if crop:
         crop_h, crop_w = crop
         img = img[crop_h:-crop_h, crop_w:-crop_w]
-    else:
-        if shave_margin:
-            h, w = img.shape
-            crop_h, crop_w = round(h*shave_margin[0]), round(w*shave_margin[1])
-            img = img[crop_h:-crop_h, crop_w:-crop_w]
 
     # Convert to grayscale
     img = rgb2gray(img)
+    img = np.array(img * 255, dtype=np.uint8)
+    # Image.fromarray(img).show()
 
     # Normalize
     img = normalize(img)
-    Image.fromarray(img).show()
+    # Image.fromarray(img).show()
 
     # Noise removal
     img = noise_removal(img)
-    Image.fromarray(img).show()
+    # Image.fromarray(img).show()
 
     # Threshold
     img = binarize(img)
-    Image.fromarray(img).show()
+    # Image.fromarray(img).show()
 
     # Enhancements
     img = enhancements(img)
-    Image.fromarray(img).show()
+    # Image.fromarray(img).show()
 
     # De-rotate (deskew)
     if deskew:
@@ -93,24 +90,32 @@ def noise_removal(img, window_size=15):
 
 
 def enhancements(img):
-    # Thin elements
-    structure = morphology.diamond(radius=1)
-    img = morphology.binary_dilation(img, selem=structure)
+    # # Thin elements
+    # structure = morphology.disk(radius=3)
+    # img = morphology.binary_closing(img, selem=structure)
 
     # Remove small objects
-    img = morphology.remove_small_objects(img, min_size=20)
+    # img = np.array(img, dtype=np.bool)
+    # img = morphology.remove_small_objects(img, min_size=5**2)
 
-    # Remove small holes
-    img = morphology.remove_small_holes(img, area_threshold=20)
+    # # Remove small holes
+    # img = morphology.remove_small_holes(img, area_threshold=3**2)
+    # img = np.array(img * 255, dtype=np.uint8)
 
-    # # Median filter
-    # img = Image.fromarray(img)
-    # img = img.filter(ImageFilter.MedianFilter(size=5))
-    # img = np.array(img)
+    # Median & blur filter
+    img = Image.fromarray(img)
+    img = img.filter(ImageFilter.MedianFilter(size=3))
+    img = img.filter(ImageFilter.GaussianBlur(radius=1))
+    img = np.array(img)
+
+    # Apply otsu
+    thres = filters.threshold_otsu(img)
+    img = img > thres
+    img = np.array(img * 255, dtype=np.uint8)
     return img
 
 
-def get_angle_text(img, method="projection", limit=5.0, step=1.0):
+def get_angle_text(img, method="hough", limit=5.0, step=1.0):
     if method == "hough":
         angle = determine_skew(img)
         if abs(angle) >= 90:  # Vertical lines detected
@@ -124,12 +129,15 @@ def get_angle_text(img, method="projection", limit=5.0, step=1.0):
         # Find rotation angle
         angles = np.arange(-limit, limit + step, step)
         scores = []
+        scores = []
         for angle in angles:
             hist, score = find_score(img, angle)
             scores.append(score)
         best_score = max(scores)
         best_angle = angles[scores.index(best_score)]
-        return best_angle
+    else:
+        raise NameError("Unknown method")
+    return best_angle
 
 
 def skew_rotation(img, fillcolor='white', orientation='portrait'):
