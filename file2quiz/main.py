@@ -27,7 +27,7 @@ def main():
 
     # Tesseract
     parser.add_argument('--use-ocr', help="Use an OCR to extract text from the PDFs", default=False, action="store_true")
-    parser.add_argument('--disable-preprocessing', help="Disable preprocessing for OCR", default=True, action="store_false")
+    parser.add_argument('--no-preprocess', help="Disables the image pre-processing for OCR", default=False, action="store_true")
     parser.add_argument('--deskew', help="Corrects the rotation of the documents", default=False, action="store_true")
     parser.add_argument('--lang', help="[Tesseract] Specify language(s) used for OCR", default=None)
     parser.add_argument('--dpi', help="[Tesseract] Specify DPI for input image", default=300, type=int)

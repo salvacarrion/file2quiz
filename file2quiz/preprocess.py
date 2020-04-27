@@ -8,11 +8,11 @@ from scipy.ndimage import interpolation as inter
 from skimage import filters
 from skimage import img_as_ubyte
 from skimage.color import rgb2gray
-from skimage import exposure
-from skimage import io
+from skimage import exposure, morphology, io
 
-from PIL import Image
+from PIL import Image, ImageFilter
 from deskew import determine_skew
+import cv2
 
 
 def preprocess_img_file(filename, savepath, crop=None, dpi=300, *args, **kwargs):
@@ -27,23 +27,35 @@ def preprocess_img_file(filename, savepath, crop=None, dpi=300, *args, **kwargs)
     return savepath
 
 
-def image_cleaner(img, crop=None, deskew=False, **kwargs):
+def image_cleaner(img, crop=None, deskew=False, shave_margin=(0.05, 0.05), **kwargs):
     # Crop
     if crop:
         crop_h, crop_w = crop
         img = img[crop_h:-crop_h, crop_w:-crop_w]
+    else:
+        if shave_margin:
+            h, w = img.shape
+            crop_h, crop_w = round(h*shave_margin[0]), round(w*shave_margin[1])
+            img = img[crop_h:-crop_h, crop_w:-crop_w]
 
     # Convert to grayscale
     img = rgb2gray(img)
 
     # Normalize
     img = normalize(img)
+    Image.fromarray(img).show()
 
     # Noise removal
     img = noise_removal(img)
+    Image.fromarray(img).show()
 
     # Threshold
     img = binarize(img)
+    Image.fromarray(img).show()
+
+    # Enhancements
+    img = enhancements(img)
+    Image.fromarray(img).show()
 
     # De-rotate (deskew)
     if deskew:
@@ -52,6 +64,9 @@ def image_cleaner(img, crop=None, deskew=False, **kwargs):
 
 
 def binarize(img, window_size=35):
+    # cv_image = img_as_ubyte(img)
+    # img = cv2.adaptiveThreshold(cv_image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, window_size, 0)
+
     thresh = filters.threshold_sauvola(img, window_size)
     img = img > thresh
     img = np.array(img * 255, dtype=np.uint8)
@@ -64,19 +79,38 @@ def normalize(img):
     return img
 
 
-def noise_removal(img, window_size=3):
-    # import cv2
-    #
-    # # Denoising
-    # cv_image = img_as_ubyte(img)
-    # img = cv2.fastNlMeansDenoising(cv_image, None, window_size, 7, 21)
+def noise_removal(img, window_size=15):
+    # img = filters.gaussian(img)
+    # img = np.array(img * 255, dtype=np.uint8)
 
-    # Median filtering
-    img = filters.median(img)
+    # Denoising
+    cv_image = img_as_ubyte(img)
+    img = cv2.fastNlMeansDenoising(cv_image, None, window_size, 7, 21)
+
+    # # Median filtering
+    # img = filters.median(img)
     return img
 
 
-def get_angle_text(img, method="hough", limit=5.0, step=1.0):
+def enhancements(img):
+    # Thin elements
+    structure = morphology.diamond(radius=1)
+    img = morphology.binary_dilation(img, selem=structure)
+
+    # Remove small objects
+    img = morphology.remove_small_objects(img, min_size=20)
+
+    # Remove small holes
+    img = morphology.remove_small_holes(img, area_threshold=20)
+
+    # # Median filter
+    # img = Image.fromarray(img)
+    # img = img.filter(ImageFilter.MedianFilter(size=5))
+    # img = np.array(img)
+    return img
+
+
+def get_angle_text(img, method="projection", limit=5.0, step=1.0):
     if method == "hough":
         angle = determine_skew(img)
         if abs(angle) >= 90:  # Vertical lines detected
@@ -104,7 +138,7 @@ def skew_rotation(img, fillcolor='white', orientation='portrait'):
     if (orientation == "portrait" and h < w) or (orientation == "landscape" and h > w):
         img = img.T
 
-    angle = get_angle_text(img, method="hough")
+    angle = get_angle_text(img)
     print("\t- [INFO] Rotating image: {:.2f}º".format(angle))
 
     # Rotate and add custom background

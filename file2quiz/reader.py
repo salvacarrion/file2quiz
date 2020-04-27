@@ -125,12 +125,12 @@ def save_quiz(quiz, filename):
     return save_json(quiz, filename)
 
 
-def read_image(filename, output_dir, parent_dir=None, empty_folder=False, preprocess_img=True, **kwargs):
+def read_image(filename, output_dir, parent_dir=None, empty_folder=False, no_preprocess=False, **kwargs):
     basedir, tail = os.path.split(filename)
     fname, ext = utils.get_fname(tail)
 
     # Create OCR-preprocessed folder
-    if preprocess_img:
+    if not no_preprocess:
         ocr_savepath = f"{output_dir}/ocr/preprocessed"
         ocr_savepath += f"/{parent_dir}" if parent_dir else ""
         utils.create_folder(ocr_savepath, empty_folder=empty_folder)  # Do not empty if it is part of a batch
