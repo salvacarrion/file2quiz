@@ -54,15 +54,8 @@ def preprocess_text(text, blacklist=None, mode="auto", from_ocr=False):
     # Remove blacklisted words
     text = utils.replace_words(text, blacklist, replace="") if blacklist else text
 
-    # Broken lines
-    broken_lines = regex.compile(r"(?<=\p{Latin}+)( *[\-\u2012\u2013\u2014\u2015\u2053]+\s+)(?=\p{Latin}+)", regex.MULTILINE)
-    text = regex.sub(broken_lines, r"", text)
-
     if from_ocr:
         text = text \
-            .replace("*C", "ºC") \
-            .replace("*F", "ºF") \
-            .replace("*K", "ºK") \
             .replace("Cc", "c")
 
         # Fix answers
@@ -99,6 +92,19 @@ def preprocess_text(text, blacklist=None, mode="auto", from_ocr=False):
         # Fix questions (order is important, needs to be after the answers)
         p_q0 = regex.compile(r'^(\d+)\W +(?=[A-Z\¿]+)', regex.MULTILINE)
         text = regex.sub(p_q0, r"\1. ", text)
+
+        # Fix CO2
+        p_q0 = regex.compile(r" +[co0]{2},( |$)", regex.MULTILINE | regex.IGNORECASE)
+        text = regex.sub(p_q0, " CO2", text)
+        text = text.replace(" C0 ", " CO ")
+
+        # Fix m2
+        p_q0 = regex.compile(r" +m\*( |$)", regex.MULTILINE | regex.IGNORECASE)
+        text = regex.sub(p_q0, " m2 ", text)
+
+        # Fix ºC, ºK, etc
+        p_q0 = regex.compile(r" +[\W0o]([CFK])(?= |$)", regex.MULTILINE | regex.IGNORECASE)
+        text = regex.sub(p_q0, r" \1", text)
 
         # To ease debugging (and for the below code)
         add_breaklines = regex.compile(r"^(\d+)", regex.MULTILINE)
@@ -262,6 +268,10 @@ def normalize_generic(text, sentence_case=True):
     if sentence_case and len(text) > 2:
         first_word = text.split()[0] if text else ""
         text = text[0].upper() + text[1:] if first_word not in RESERVED_WORDS else text
+
+    # Broken lines
+    broken_lines = regex.compile(r"(?<=\p{Latin}+)( *[\-\u2012\u2013\u2014\u2015\u2053]+\s+)(?=\p{Latin}+)", regex.MULTILINE)
+    text = regex.sub(broken_lines, r"", text)
 
     # Remove space before/after a parentheses, quotation mark, etc
     text = regex.sub(r"(?<=[\(\[\{\¿\¡]+)(\s+)", '', text)
@@ -566,6 +576,9 @@ def infer_question_blocks(blocks, single_line, num_expected_answers, *args, **kw
         content = content.strip()
         q_blocks.append([b_id, content]) if content else None
 
+    # Check if questions fit
+    q_ans_fit = len(q_blocks) == num_expected_answers+1 if num_expected_answers else False
+
     # Infer questions/answers
     # Join questions and answers if needed (IDs must be already normalized)
     if single_line or not infer_question:
@@ -578,12 +591,12 @@ def infer_question_blocks(blocks, single_line, num_expected_answers, *args, **kw
             if not regex.search("(\p{Latin}|\d)", b_text):
                 continue
 
-            # Infer blocks
+            # Infer blocks ('z' is reserved)
             idx_last = len(new_blocks) - 1
             if b_id is None:  # Join with previous
                 new_blocks[idx_last][1] += " " + b_text
-            elif len(b_id) == 1 and string.ascii_lowercase[idx_last] != b_id:  # ej: ("a", "una casa")
-                new_blocks[idx_last][1] += f" {b_id} {b_text}"
+            elif not q_ans_fit and len(b_id) == 1 and string.ascii_lowercase[idx_last] != b_id:  # I don't like this!
+                new_blocks[idx_last][1] += f" {b_id} {b_text}"  # e.g.: "a casa"
             else:  # Correct or weird IDs (3.2a, 12.b, etc)
                 new_blocks.append([b_id, b_text.strip()])
 
