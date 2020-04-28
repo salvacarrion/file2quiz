@@ -182,7 +182,7 @@ def read_pdf_ocr(filename, output_dir, **kwargs):
         print("\t- [INFO] Pre-processing images...")
         for i, f in enumerate(scanned_files, 1):
             print(f"\t- [INFO] Pre-processing image {i} of {len(scanned_files)}")
-            preprocess.preprocess_img_file(f, savepath=savepath, **kwargs)
+            preprocess.preprocess_img_file(f, savepath, i, **kwargs)
 
     # Get preprocessed files
     preprocessed_files = utils.get_files(savepath, extensions={'.pgm'})

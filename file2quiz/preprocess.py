@@ -15,7 +15,7 @@ from deskew import determine_skew
 import cv2
 
 
-def preprocess_img_file(filename, savepath, crop=None, dpi=300, unpaper_args="", layout="single", *args, **kwargs):
+def preprocess_img_file(filename, savepath, page_i, crop=None, dpi=300, unpaper_args="", layout="single", *args, **kwargs):
     head, tail = utils.get_tail(savepath)
     fname, ext = utils.get_fname(head)
 
@@ -35,7 +35,7 @@ def preprocess_img_file(filename, savepath, crop=None, dpi=300, unpaper_args="",
     # os.system(cmd)
 
     # Unpaper preprocessing
-    savepath_tmp = f"{savepath}/{fname}_%d.pgm"
+    savepath_tmp = f"{savepath}/{fname}_page{page_i}_%d.pgm"
     cmd = f'unpaper --overwrite {unpaper_args} "{filename}" "{savepath_tmp}"'
     os.system(cmd)
 
