@@ -127,21 +127,6 @@ def save_quiz(quiz, filename):
 
 def read_image(filename, output_dir, parent_dir=None, empty_folder=False, no_preprocess=False, **kwargs):
     basedir, tail = os.path.split(filename)
-    fname, ext = utils.get_fname(tail)
-
-    # Create OCR-preprocessed folder
-    if not no_preprocess:
-        ocr_savepath = f"{output_dir}/ocr/preprocessed"
-        ocr_savepath += f"/{parent_dir}" if parent_dir else ""
-        utils.create_folder(ocr_savepath, empty_folder=empty_folder)  # Do not empty if it is part of a batch
-
-        # Preprocess image
-        filename_clean = os.path.join(ocr_savepath, f"{fname}.tiff")
-        if not os.path.exists(filename_clean):
-            print(f"\t- [INFO] Preprocessing image...")
-            filename_clean = preprocess.preprocess_img_file(filename, savepath=filename_clean, **kwargs)
-    else:
-        filename_clean = filename
 
     # Create OCR folder
     ocr_savepath = f"{output_dir}/ocr/txt"
@@ -149,7 +134,7 @@ def read_image(filename, output_dir, parent_dir=None, empty_folder=False, no_pre
     utils.create_folder(ocr_savepath, empty_folder=empty_folder)  # Do not empty if it is part of a batch
 
     # Perform OCR
-    converter.image2text(filename_clean, f"{ocr_savepath}/{tail}.txt", **kwargs)
+    converter.image2text(filename, f"{ocr_savepath}/{tail}.txt", **kwargs)
 
     # Read file
     text = read_txt(filename=f"{ocr_savepath}/{tail}.txt")
@@ -188,9 +173,24 @@ def read_pdf_ocr(filename, output_dir, **kwargs):
     scanned_files = utils.get_files(savepath, extensions={'.tiff'})
     scanned_files.sort(key=utils.tokenize)
 
+    # Scan pages
+    savepath = f"{output_dir}/ocr/preprocessed/{tail}"
+    if os.path.exists(savepath):
+        print("\t- [INFO] Skipping pre-processing. The folder already exists.")
+    else:
+        utils.create_folder(savepath, empty_folder=True)
+        print("\t- [INFO] Pre-processing images...")
+        for i, f in enumerate(scanned_files, 1):
+            print(f"\t- [INFO] Pre-processing image {i} of {len(scanned_files)}")
+            preprocess.preprocess_img_file(f, savepath=savepath, **kwargs)
+
+    # Get preprocessed files
+    preprocessed_files = utils.get_files(savepath, extensions={'.pgm'})
+    preprocessed_files.sort(key=utils.tokenize)
+
     # Perform OCR on the scanned pages
-    for i, filename in enumerate(scanned_files, 1):
-        print("\t- [INFO] Performing OCR {} of {}".format(i, len(scanned_files)))
+    for i, filename in enumerate(preprocessed_files, 1):
+        print("\t- [INFO] Performing OCR {} of {}".format(i, len(preprocessed_files)))
         text = read_image(filename, output_dir,  parent_dir=tail, empty_folder=False, **kwargs)
         pages_txt.append(text)
 

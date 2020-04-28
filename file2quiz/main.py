@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--num-answers', help="Number of answers per question", default=None, type=int)
     parser.add_argument('--save-txt', help="Save quizzes in txt", default=False, action="store_true")
     parser.add_argument('--answer-table', help="Show correct answer as a table", default=False, action="store_true")
+    parser.add_argument('--unpaper-args', help="Arguments for unpaper", default="")
 
     # Tesseract
     parser.add_argument('--use-ocr', help="Use an OCR to extract text from the PDFs", default=False, action="store_true")

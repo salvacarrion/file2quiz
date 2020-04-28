@@ -15,7 +15,7 @@ from deskew import determine_skew
 import cv2
 
 
-def preprocess_img_file(filename, savepath, crop=None, dpi=300, layout="single", use_unpaper=True, *args, **kwargs):
+def preprocess_img_file(filename, savepath, crop=None, dpi=300, unpaper_args="", layout="single", *args, **kwargs):
     head, tail = utils.get_tail(savepath)
     fname, ext = utils.get_fname(head)
 
@@ -29,27 +29,15 @@ def preprocess_img_file(filename, savepath, crop=None, dpi=300, layout="single",
     # imsave(img, savepath, dpi=dpi)
 
     # Basic preprocessing
-    savepath_tmp = f"{tail}/{fname}.pgm"
+    # savepath_tmp1 = f"{tail}/{fname}.pgm"
     # program = os.path.abspath(os.path.join("../scripts/mytextcleaner.sh"))
-    # cmd = f"{program} {filename} {savepath_tmp}"
+    # cmd = f"{program} {filename} {savepath_tmp1}"
     # os.system(cmd)
 
     # Unpaper preprocessing
-    if use_unpaper:
-        cmd = f'unpaper --layout {layout} --overwrite "{filename}" "{savepath_tmp}"'
-        os.system(cmd)
-
-    # Save as TIFF
-    savepath = f"{tail}/{fname}.tiff"
-    cmd = f'convert -density 300 "{savepath_tmp}" "{savepath}"'
+    savepath_tmp = f"{savepath}/{fname}_%d.pgm"
+    cmd = f'unpaper --overwrite {unpaper_args} "{filename}" "{savepath_tmp}"'
     os.system(cmd)
-
-    # Delete temp file
-    try:
-        os.remove(savepath_tmp)
-    except IOError as e:
-        print(f"\t- [ERROR] Deleting temporal file: {savepath_tmp}")
-    return savepath
 
 
 def image_cleaner(img, crop=None, deskew=False, **kwargs):
@@ -167,7 +155,7 @@ def get_angle_text(img, method="hough", limit=5.0, step=1.0):
 
 def skew_rotation(img, fillcolor='white', orientation='portrait'):
     # Rotate if needed
-    h, w = img.shape
+    h, w = img.shape[0], img.shape[1]
     if (orientation == "portrait" and h < w) or (orientation == "landscape" and h > w):
         img = img.T
 
