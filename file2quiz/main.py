@@ -25,6 +25,8 @@ def main():
     parser.add_argument('--save-txt', help="Save quizzes in txt", default=False, action="store_true")
     parser.add_argument('--answer-table', help="Show correct answer as a table", default=False, action="store_true")
     parser.add_argument('--unpaper-args', help="Arguments for unpaper", default="")
+    parser.add_argument('--save-txt-preprocessed', help="Save preprocessed txt (debugging)", default=False, action="store_true")
+    parser.add_argument('--from-ocr', help="Parsing a file read using OCR", default=False, action="store_true")
 
     # Tesseract
     parser.add_argument('--use-ocr', help="Use an OCR to extract text from the PDFs", default=False, action="store_true")

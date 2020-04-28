@@ -29,21 +29,22 @@
 ### Enabling OCR functionality
 
 To enable the Optical Character Recognition of images and PDFs,
-you need to install `ImageMagick` and `Tesseract` along with the
-language in which you want to perform the recognition.
+you need to install: 
 
 On Ubuntu/Debian:
 
 ```
 sudo apt install imagemagick
 sudo apt install tesseract-ocr
+sudo apt install unpaper
 ```
 
 On MacOS:
 
 ```
 brew install imagemagick
-brew install tesseract --all-languages
+brew install tesseract
+brew install unpaper
 ```
 
 ### Bold text extraction

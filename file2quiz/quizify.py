@@ -12,7 +12,7 @@ RGX_ANSWER = r"^[\(\[ ]*?(?:(?:\d+\.)*\d+)*[a-zA-Z]{1}"
 DELIMITER = "\n@\n@\n@\n"
 
 
-def preprocess_text(text, blacklist=None, mode="auto"):
+def preprocess_text(text, blacklist=None, mode="auto", from_ocr=False):
     # Remove unwanted characters
     text = text \
         .replace('`a', 'à').replace('´a', 'á').replace('¨a', 'ä')\
@@ -29,8 +29,6 @@ def preprocess_text(text, blacklist=None, mode="auto"):
         .replace('´', '') \
         .replace('`', '') \
         .replace('…', '...') \
-        .replace('€)', 'c)') \
-        .replace('©', 'c)') \
         .replace('·º', 'º') \
         .replace('\ufeff', '')
 
@@ -56,9 +54,59 @@ def preprocess_text(text, blacklist=None, mode="auto"):
     # Remove blacklisted words
     text = utils.replace_words(text, blacklist, replace="") if blacklist else text
 
-    # Fix answers like: (a), (  b  ), etc
-    # pattern = regex.compile(r"^[\(\[]+\s*([\d\.]*[a-zA-Z]{1})\s*([\)\-\]\t ]+)", regex.MULTILINE)
-    # text = regex.sub(pattern, r"\1) ", text)
+    # Broken lines
+    broken_lines = regex.compile(r"(?<=\p{Latin}+)( *[\-\u2012\u2013\u2014\u2015\u2053]+\s+)(?=\p{Latin}+)", regex.MULTILINE)
+    text = regex.sub(broken_lines, r"", text)
+
+    if from_ocr:
+        text = text \
+            .replace("*C", "ºC") \
+            .replace("*F", "ºF") \
+            .replace("*K", "ºK") \
+            .replace("Cc", "c")
+
+        # Fix answers
+        p_ans0 = regex.compile(r"^.{,4}?\) *", regex.MULTILINE)
+        text = regex.sub(p_ans0, "z) ", text)
+
+        p_ans0 = regex.compile(r"^[abcdeABCDE][\)\.\-] *", regex.MULTILINE)
+        text = regex.sub(p_ans0, "z) ", text)
+
+        p_ans0 = regex.compile(r"^[bcdeBCDE][\W ] *", regex.MULTILINE)
+        text = regex.sub(p_ans0, "z) ", text)
+
+        p_ans0 = regex.compile(r"^[a] (?=[A-Z])", regex.MULTILINE)
+        text = regex.sub(p_ans0, "z) ", text)
+
+        p_ans0 = regex.compile(r"^([ÁÉÍÓÚaéíóú]|dy|0) ", regex.MULTILINE)
+        text = regex.sub(p_ans0, "z) ", text)
+
+        # Do some cleaning
+        text = text.replace("z) z)", "z)")
+
+        # Fix typical errors
+        p_ans1 = regex.compile(r"(?<=[ABCD])y(?=[ABCD]( |$))", regex.MULTILINE)
+        text = regex.sub(p_ans1, " y ", text)
+
+        # Sentences must finish with an normal character
+        p_ans2 = regex.compile(r"[^\w\,\.\:\?\%]*$", regex.MULTILINE)
+        text = regex.sub(p_ans2, "", text)
+
+        # Fix questions (order is important, needs to be after the answers)
+        p_q0 = regex.compile(r"^([^\-\+a-zA-Z]*?)(\d+)", regex.MULTILINE)
+        text = regex.sub(p_q0, r"\2", text)
+
+        # Fix questions (order is important, needs to be after the answers)
+        p_q0 = regex.compile(r'^(\d+)\W +(?=[A-Z\¿]+)', regex.MULTILINE)
+        text = regex.sub(p_q0, r"\1. ", text)
+
+        # To ease debugging (and for the below code)
+        add_breaklines = regex.compile(r"^(\d+)", regex.MULTILINE)
+        text = regex.sub(add_breaklines, r"\n\n\1", text)
+
+        # Fix pages numbers
+        p_gen0 = regex.compile(r"\n\n\d+\n", regex.MULTILINE)
+        text = regex.sub(p_gen0, r"\n\n", text)
 
     return text
 
@@ -215,9 +263,6 @@ def normalize_generic(text, sentence_case=True):
         first_word = text.split()[0] if text else ""
         text = text[0].upper() + text[1:] if first_word not in RESERVED_WORDS else text
 
-    # Remove broken line hyphens
-    text = regex.sub(r"(?<=\p{Latin}+)([\-\u2012\u2013\u2014\u2015\u2053]+\s+)(?=\p{Latin}+)", '', text)
-
     # Remove space before/after a parentheses, quotation mark, etc
     text = regex.sub(r"(?<=[\(\[\{\¿\¡]+)(\s+)", '', text)
     text = regex.sub(r"(\s+)(?=[\)\]\}\?\!\,\.]+)", '', text)
@@ -303,6 +348,12 @@ def parse_quiz(input_dir, output_dir, token_answer=None, num_answers=None, mode=
     quizzes_dir = os.path.join(output_dir, "quizzes/json")
     utils.create_folder(quizzes_dir, empty_folder=True) if save_files else None
 
+    # Create txt preprocessed
+    preprocessed_dir = kwargs.get("save_txt_preprocessed")
+    if preprocessed_dir:
+        preprocessed_dir = os.path.join(output_dir, "txt_preprocessed")
+        utils.create_folder(preprocessed_dir, empty_folder=True) if save_files else None
+
     # Check answer token
     if token_answer and utils.has_regex(token_answer):
         print("\t- [INFO] Your answer token contains regular expressions. Regex knowledge is required.")
@@ -323,10 +374,13 @@ def parse_quiz(input_dir, output_dir, token_answer=None, num_answers=None, mode=
         # Read file
         txt_file = reader.read_txt(filename)
 
+        # Save preprocessed
+        savepath_preprocessed = os.path.join(preprocessed_dir, f"{tail}.txt") if preprocessed_dir else None
+
         # Parse txt quiz
         answer_fname = regex.sub(r"\.\w+\.\w+$", "", tail)
         answers_file = os.path.join(output_dir, f"txt_selector/{answer_fname}.html_selected.txt")
-        quiz = parse_quiz_txt(txt_file, blacklist, token_answer, num_answers, mode, answers_file, *args, **kwargs)
+        quiz = parse_quiz_txt(txt_file, blacklist, token_answer, num_answers, mode, answers_file, savepath_preprocessed, *args, **kwargs)
 
         # Keep count of total questions
         solutions = sum([1 for q_id, q in quiz.items() if q.get('correct_answer') is not None])
@@ -385,7 +439,7 @@ def get_config(file, max_lines=10):
 
 
 def parse_quiz_txt(text, blacklist=None, token_answer=None, num_answers=None, mode="auto", answers_file=None,
-                   *args, **kwargs):
+                   savepath_preprocessed=None, *args, **kwargs):
     # Look for user params and override
     text, config = get_config(text)
     if config:
@@ -395,7 +449,11 @@ def parse_quiz_txt(text, blacklist=None, token_answer=None, num_answers=None, mo
         kwargs.update(config)
 
     # Preprocess text
-    text = preprocess_text(text, blacklist, mode)
+    text = preprocess_text(text, blacklist, mode, from_ocr=kwargs.get("from_ocr"))
+
+    # Save preprocessed
+    if savepath_preprocessed:
+        reader.save_txt(text, savepath_preprocessed)
 
     # Split file (questions / answers)
     txt_questions, txt_answers = text, None

@@ -99,7 +99,8 @@ def image2text(filename, savepath, lang="eng", dpi=300, psm=3, oem=3, **kwargs):
     fname, ext = os.path.splitext(tail)
 
     # Run command
-    cmd = f'tesseract "{filename}" "{basedir}/{fname}" -l {lang} --dpi {dpi} --psm {psm} --oem {oem}'
+    #sub_cmds = 'tessedit_char_whitelist="0123456789 abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYñÑçÇáéíóúÁÉíÓÚüÜ()¿?,;.:/-\"\'ºª%-+Ø=<>*"'
+    cmd = f'tesseract "{filename}" "{basedir}/{fname}" -l {lang} --dpi {dpi} --psm {psm} --oem {oem} letters' #-c {sub_cmds}
     os.system(cmd)
 
 
