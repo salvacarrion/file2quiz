@@ -166,7 +166,7 @@ def read_pdf(filename, output_dir, use_ocr=False, min_char=200, **kwargs):
         # Check number of characters
         total_chars = sum([len(p.strip()) for p in pages if isinstance(p, str)])
         if total_chars < min_char:
-            print(f"\t- [WARNING] Too few characters ({total_chars}) were detected on the PDF."
+            print(f"\t- [WARNING] Too few characters ({total_chars}) were detected on the PDF. "
                   f"An OCR probably needed to extract the text from this file.")
         return pages
 

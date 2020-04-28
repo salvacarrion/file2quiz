@@ -15,15 +15,40 @@ from deskew import determine_skew
 import cv2
 
 
-def preprocess_img_file(filename, savepath, crop=None, dpi=300, *args, **kwargs):
+def preprocess_img_file(filename, savepath, crop=None, dpi=300, layout="single", use_unpaper=True, *args, **kwargs):
+    head, tail = utils.get_tail(savepath)
+    fname, ext = utils.get_fname(head)
+
     # Read image
-    img = imread(filename)
+    #img = imread(filename)
 
     # Pre-process image
-    img = image_cleaner(img, crop=crop, **kwargs)
+    # img = image_cleaner(img, crop=crop, **kwargs)
+    #
+    # # Save image
+    # imsave(img, savepath, dpi=dpi)
 
-    # Save image
-    imsave(img, savepath, dpi=dpi)
+    # Basic preprocessing
+    savepath_tmp = f"{tail}/{fname}.pgm"
+    # program = os.path.abspath(os.path.join("../scripts/mytextcleaner.sh"))
+    # cmd = f"{program} {filename} {savepath_tmp}"
+    # os.system(cmd)
+
+    # Unpaper preprocessing
+    if use_unpaper:
+        cmd = f'unpaper --layout {layout} --overwrite "{filename}" "{savepath_tmp}"'
+        os.system(cmd)
+
+    # Save as TIFF
+    savepath = f"{tail}/{fname}.tiff"
+    cmd = f'convert -density 300 "{savepath_tmp}" "{savepath}"'
+    os.system(cmd)
+
+    # Delete temp file
+    try:
+        os.remove(savepath_tmp)
+    except IOError as e:
+        print(f"\t- [ERROR] Deleting temporal file: {savepath_tmp}")
     return savepath
 
 
@@ -76,7 +101,7 @@ def normalize(img):
     return img
 
 
-def noise_removal(img, window_size=15):
+def noise_removal(img, window_size=25):
     # img = filters.gaussian(img)
     # img = np.array(img * 255, dtype=np.uint8)
 
