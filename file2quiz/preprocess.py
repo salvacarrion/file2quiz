@@ -23,8 +23,10 @@ def preprocess_img_file(filename, savepath, page_i, crop=None, dpi=300, unpaper_
     #img = imread(filename)
 
     # Pre-process image
-    # img = image_cleaner(img, crop=crop, **kwargs)
-    #
+    # try:
+    #     img = image_cleaner(img, crop=crop, **kwargs)
+    # except ValueError as e:
+    #     pass
     # # Save image
     # imsave(img, savepath, dpi=dpi)
 
@@ -47,8 +49,9 @@ def image_cleaner(img, crop=None, deskew=False, **kwargs):
         img = img[crop_h:-crop_h, crop_w:-crop_w]
 
     # Convert to grayscale
-    img = rgb2gray(img)
-    img = np.array(img * 255, dtype=np.uint8)
+    if img.ndim == 3:
+        img = rgb2gray(img)
+        img = np.array(img * 255, dtype=np.uint8)
     # Image.fromarray(img).show()
 
     # Normalize
