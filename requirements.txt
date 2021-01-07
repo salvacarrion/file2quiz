@@ -1,7 +1,7 @@
 regex==2020.4.4
 tika==1.24
 beautifulsoup4==4.9.0
-lxml==4.5.0
+lxml==4.6.2
 #pywin32==227  # To convert PDFs to Docx
 selenium>=3.141.0
 scikit-image>=0.16.2
