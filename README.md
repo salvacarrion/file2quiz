@@ -28,6 +28,15 @@
 
 ### Enabling OCR functionality
 
+#### Google Cloud Vision (Recommended)
+
+The results I get with `Imagemagick+unpaper+tesserect` are most of the time useless when the document is not perfectly scanned. Therefore, **I strongly recommend to use `Adobe Acrobat Pro+Google Cloud Vision`.** The Text Recognition that comes with Adobe Acrobat Pro is not good at all, but the good thing is that it automatically straighten the scanned pages. Then, we can use `Google Cloud Vision` to OCR that document. 
+
+I have tried many free open-sourced OCR libraries (Tesseract, PyLaia, Transkribus, PaddleOCR,...) and many other non-free options (Amazon Textract, Google Cloud Vision, ABBYY FineReader, Online OCR,...), and I can confidently say that unless you want to start an OCR company, publish academic papers about OCR/HTR or learn a lot about the nuts and bolts of this stuff, I strongly recommend you to use Google Cloud Vision. Why? It is slightly better than Textract (although it does not support either tables or forms) and you get 1000 free images each month... then you pay 1,50$ per 1000 images, which is crazy cheap for the difficulty of the task.
+
+
+#### Tesseract option (not recommended)
+
 To enable the Optical Character Recognition of images and PDFs,
 you need to install: 
 
